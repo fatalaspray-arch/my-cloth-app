@@ -1,0 +1,3817 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pay Printing Stores</title>
+    <script>
+      document.documentElement.removeAttribute('data-theme'); localStorage.setItem('dit_theme', 'light');
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .theme-toggle { display: none !important; }
+      :root {
+        --primary: #0891b2;
+        --primary-dark: #0e7490;
+        --primary-light: #22d3ee;
+        --primary-glow: rgba(8, 145, 178, 0.15);
+        --bg-main: #eef5f7;
+        --bg-surface: #f5fafb;
+        --card-bg: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --text-dim: #94a3b8;
+        --border-color: #e2e8f0;
+        --success: #16a34a;
+        --success-bg: rgba(22, 163, 74, 0.08);
+        --warning: #ca8a04;
+        --warning-bg: rgba(202, 138, 4, 0.08);
+        --danger: #dc2626;
+        --danger-bg: rgba(220, 38, 38, 0.08);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg-main);
+        color: var(--text-main);
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      .container {
+        position: relative;
+        z-index: 1;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 30px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      .header h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .header h2::before {
+        content: "";
+        display: block;
+        width: 6px;
+        height: 28px;
+        background: linear-gradient(180deg, var(--primary), var(--primary-light));
+        border-radius: 3px;
+      }
+      .header-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 18px;
+        background: var(--card-bg);
+        color: var(--text-muted);
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .back-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary-dark);
+        box-shadow: 0 4px 12px var(--primary-glow);
+      }
+      .user-display {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        background: rgba(8, 145, 178, 0.05);
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: 1px solid rgba(8, 145, 178, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .user-display strong {
+        color: var(--primary-dark);
+        font-weight: 600;
+      }
+      .theme-toggle { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 9px; background: var(--card-bg); color: var(--text-muted); cursor: pointer; transition: all .2s ease; }
+      .theme-toggle:hover { color: var(--primary); border-color: var(--primary); transform: translateY(-1px); }
+      .theme-toggle svg { width: 18px; height: 18px; }
+      .theme-toggle .sun-icon { display: none; }
+
+      /* ===================== Navigate dropdown ===================== */
+      .nav-dropdown-wrap {
+        position: relative;
+      }
+      .nav-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        background: var(--text-main);
+        color: #fff;
+        border: none;
+        border-radius: 24px;
+        font-family: inherit;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+      }
+      .nav-toggle-btn:hover {
+        background: #1e293b;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+      }
+      .nav-toggle-btn svg {
+        flex-shrink: 0;
+      }
+      .nav-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 10px);
+        left: 0;
+        width: 240px;
+        background: var(--card-bg);
+        border-radius: 14px;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.06);
+        border: 1px solid var(--border-color);
+        padding: 10px;
+        z-index: 200;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-6px);
+        transition: all 0.18s ease;
+      }
+      .nav-dropdown-wrap.open .nav-dropdown-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+      .nav-dropdown-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 10px 14px 10px;
+      }
+      .nav-dropdown-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: var(--primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+      }
+      .nav-dropdown-profile-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        line-height: 1.2;
+      }
+      .nav-dropdown-profile-role {
+        font-size: 0.75rem;
+        color: var(--text-dim);
+      }
+      .nav-dropdown-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-main);
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .nav-dropdown-item:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      .nav-dropdown-item.active {
+        background: var(--primary-glow);
+        color: var(--primary-dark);
+      }
+      .nav-dropdown-item.active::after {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--primary);
+        flex-shrink: 0;
+      }
+      .nav-dropdown-divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 8px 4px;
+      }
+      .nav-dropdown-item.logout {
+        color: var(--danger);
+      }
+      .nav-dropdown-item.logout:hover {
+        background: var(--danger-bg);
+      }
+
+      .tab-nav {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 20px;
+        background: var(--card-bg);
+        padding: 6px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        width: fit-content;
+        flex-wrap: wrap;
+        align-items: center;
+        overflow: visible;
+      }
+      .tab-item {
+        display: inline-flex;
+        align-items: stretch;
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+        transition: all 0.2s;
+      }
+      .tab-item .tab-btn {
+        padding: 10px 14px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.82rem;
+        transition: all 0.2s;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        background: transparent;
+        border-left: 3px solid var(--tab-color, var(--border-color));
+      }
+      .tab-item .tab-btn.active {
+        color: #fff;
+        background: var(--tab-color, var(--primary));
+        border-left-color: var(--tab-color, var(--primary));
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      }
+      .tab-item .tab-btn:hover:not(.active) {
+        background: rgba(0, 0, 0, 0.03);
+        color: var(--text-main);
+      }
+      .tab-color-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .tab-item .tab-btn.active .tab-color-dot {
+        background: rgba(255, 255, 255, 0.5) !important;
+      }
+      .tab-menu-trigger {
+        padding: 0 8px;
+        border: none;
+        background: transparent;
+        color: var(--text-dim);
+        cursor: pointer;
+        font-size: 1rem;
+        line-height: 1;
+        transition: all 0.2s;
+        opacity: 0;
+      }
+      .tab-item:hover .tab-menu-trigger {
+        opacity: 0.7;
+      }
+      .tab-menu-trigger:hover {
+        opacity: 1 !important;
+        color: var(--text-main);
+        background: rgba(0, 0, 0, 0.04);
+      }
+      .tab-add-btn {
+        width: 36px;
+        height: 36px;
+        border: 2px dashed var(--border-color);
+        background: transparent;
+        color: var(--text-dim);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        flex-shrink: 0;
+      }
+      .tab-add-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-glow);
+      }
+
+      .print-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0 12px;
+        height: 36px;
+        border: 1px solid var(--border-color);
+        background: var(--card-bg);
+        color: var(--text-muted);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.78rem;
+        font-weight: 600;
+        font-family: inherit;
+        transition: all 0.2s;
+        flex-shrink: 0;
+        white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+      .print-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary-dark);
+        background: var(--primary-glow);
+        box-shadow: 0 4px 12px var(--primary-glow);
+      }
+      .print-btn .arrow {
+        font-size: 0.55rem;
+        opacity: 0.6;
+        transition:
+          transform 0.2s,
+          opacity 0.2s;
+      }
+      .print-btn.dropdown-open .arrow {
+        transform: rotate(180deg);
+        opacity: 1;
+      }
+
+      .print-dropdown {
+        position: fixed;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.14);
+        padding: 0;
+        z-index: 3000;
+        display: none;
+        min-width: 220px;
+        overflow: hidden;
+      }
+      .print-dropdown.show {
+        display: block;
+        animation: fadeIn 0.15s ease;
+      }
+      .print-dropdown-header {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border-color);
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .print-dropdown-header label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+      }
+      .print-select-all {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: var(--primary);
+        cursor: pointer;
+        background: none;
+        border: none;
+        font-family: inherit;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: all 0.15s;
+      }
+      .print-select-all:hover {
+        background: var(--primary-glow);
+      }
+      .print-store-list {
+        padding: 4px;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+      .print-store-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: background 0.15s;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: var(--text-main);
+      }
+      .print-store-item:hover {
+        background: #f1f5f9;
+      }
+      .print-store-item input[type="checkbox"] {
+        width: 15px;
+        height: 15px;
+        accent-color: var(--primary);
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .print-store-item .color-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .print-store-item span:last-child {
+        flex: 1;
+      }
+      .print-no-stores {
+        padding: 16px 14px;
+        color: var(--text-dim);
+        font-size: 0.8rem;
+        text-align: center;
+        font-style: italic;
+      }
+      .print-dropdown-footer {
+        padding: 8px;
+        border-top: 1px solid var(--border-color);
+        background: #f8fafc;
+      }
+      .print-dropdown-footer .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 9px 14px;
+        font-size: 0.8rem;
+      }
+
+      .tab-context-menu {
+        position: fixed;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        padding: 4px;
+        z-index: 3000;
+        display: none;
+        min-width: 150px;
+      }
+      .tab-context-menu.show {
+        display: block;
+        animation: fadeIn 0.15s ease;
+      }
+      .tab-context-menu button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 9px 14px;
+        border: none;
+        background: transparent;
+        color: var(--text-main);
+        font-size: 0.82rem;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.15s;
+        font-family: inherit;
+      }
+      .tab-context-menu button:hover {
+        background: #f1f5f9;
+      }
+      .tab-context-menu button.edit-option:hover {
+        background: var(--primary-glow);
+        color: var(--primary-dark);
+      }
+      .tab-context-menu button.delete-option:hover {
+        background: var(--danger-bg);
+        color: var(--danger);
+      }
+      .tab-context-menu .menu-divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 4px 8px;
+      }
+
+      .table-card {
+        background: var(--card-bg);
+        border-radius: 14px;
+        border: 1px solid var(--border-color);
+        overflow: visible;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+      .table-card-header {
+        height: 4px;
+        width: 100%;
+        border-radius: 14px 14px 0 0;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .table-actions {
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.5);
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .btn {
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        font-weight: 600;
+        font-family: inherit;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: var(--primary-dark);
+        box-shadow: 0 4px 12px var(--primary-glow);
+      }
+      .btn-receive {
+        background: var(--success);
+        color: #fff;
+      }
+      .btn-receive:hover {
+        background: #15803d;
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+      }
+      .btn-issue {
+        background: #f59e0b;
+        color: #fff;
+      }
+      .btn-issue:hover {
+        background: #d97706;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+      }
+      .btn-warning {
+        background: #f8fafc;
+        color: var(--warning);
+        border: 1px solid var(--border-color);
+      }
+      .btn-warning:hover {
+        background: var(--warning-bg);
+        border-color: var(--warning);
+      }
+
+      .action-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        display: inline-flex;
+        border-radius: 4px;
+        transition: all 0.2s;
+        color: var(--text-muted);
+      }
+      .action-btn:hover {
+        background: #f8fafc;
+      }
+      .action-btn.edit-btn:hover {
+        color: var(--primary);
+        background: var(--primary-glow);
+      }
+      .action-btn.delete-btn:hover {
+        color: var(--danger);
+        background: var(--danger-bg);
+      }
+      .table-wrapper {
+        position: relative;
+        overflow-y: visible;
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1100px;
+        table-layout: auto;
+      }
+      th,
+      td {
+        padding: 10px 8px;
+        text-align: center;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.82rem;
+        vertical-align: middle;
+      }
+      .user-id-column {
+        padding-right: 24px !important;
+      }
+      .action-column {
+        padding-left: 24px !important;
+        min-width: 92px;
+      }
+      th {
+        background: #f8fafc;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.68rem;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
+        white-space: nowrap;
+      }
+      tr:hover {
+        background: rgba(8, 145, 178, 0.02);
+      }
+      th:nth-child(1),
+      td:nth-child(1) {
+        width: 36px;
+        min-width: 32px;
+      }
+      th:nth-child(2),
+      td:nth-child(2) {
+        width: 145px;
+        min-width: 130px;
+        max-width: 155px;
+      }
+      td:nth-child(2) input {
+        font-size: 0.76rem;
+        padding: 4px 2px;
+        letter-spacing: -0.2px;
+      }
+      th:nth-child(3),
+      td:nth-child(3) {
+        width: 88px;
+        min-width: 78px;
+        max-width: 100px;
+      }
+      td:nth-child(3) input {
+        font-size: 0.8rem;
+        padding: 6px 2px;
+      }
+      th:nth-child(4),
+      td:nth-child(4) {
+        width: 70px;
+        min-width: 55px;
+        max-width: 80px;
+      }
+      th:nth-child(5),
+      td:nth-child(5) {
+        min-width: 120px;
+        max-width: 180px;
+        text-align: left;
+      }
+      td:nth-child(5) input {
+        text-align: left;
+        padding-left: 8px;
+      }
+      th:nth-child(6),
+      td:nth-child(6) {
+        width: 130px;
+        min-width: 120px;
+        max-width: 150px;
+        padding-right: 4px;
+      }
+      td:nth-child(6) .dept-text {
+        white-space: nowrap;
+      }
+      th:nth-child(7),
+      td:nth-child(7) {
+        width: 58px;
+        min-width: 50px;
+        max-width: 66px;
+        padding-left: 4px;
+      }
+      td:nth-child(7) input {
+        font-size: 0.76rem;
+        padding: 4px 2px;
+      }
+      th:nth-child(8),
+      td:nth-child(8) {
+        width: 68px;
+        min-width: 56px;
+        max-width: 80px;
+      }
+      th:nth-child(9),
+      td:nth-child(9) {
+        width: 68px;
+        min-width: 56px;
+        max-width: 80px;
+      }
+      th:nth-child(10),
+      td:nth-child(10) {
+        width: 68px;
+        min-width: 56px;
+        max-width: 80px;
+      }
+      th:nth-child(11),
+      td:nth-child(11) {
+        min-width: 140px;
+        max-width: 220px;
+        text-align: left;
+      }
+      td:nth-child(11) .rcvd-text {
+        text-align: left;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+      th:nth-child(12),
+      td:nth-child(12) {
+        width: 68px;
+        min-width: 56px;
+        max-width: 80px;
+      }
+      th:nth-child(13),
+      td:nth-child(13) {
+        width: 58px;
+        min-width: 50px;
+        max-width: 66px;
+      }
+      .th-sortable {
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.2s;
+      }
+      .th-sortable:hover {
+        color: var(--primary-dark);
+      }
+      .th-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .sort-icon {
+        font-size: 0.8rem;
+        opacity: 0.3;
+        transition: opacity 0.2s;
+      }
+      .th-sortable:hover .sort-icon {
+        opacity: 0.8;
+      }
+      .sort-icon.active {
+        opacity: 1;
+        color: var(--primary-dark);
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid transparent;
+        background: transparent;
+        text-align: center;
+        padding: 6px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.82rem;
+        color: var(--text-main);
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      .quantity-in,
+      .quantity-out {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        -moz-appearance: textfield;
+        appearance: textfield;
+        text-align: center;
+        font-family: "JetBrains Mono", monospace;
+        width: 100%;
+        cursor: default;
+      }
+      .quantity-in::-webkit-outer-spin-button,
+      .quantity-in::-webkit-inner-spin-button,
+      .quantity-out::-webkit-outer-spin-button,
+      .quantity-out::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      /* Balance input â€” text type, no spin buttons, clean display */
+      .balance {
+        border: none !important;
+        background: transparent !important;
+        padding: 4px 2px !important;
+        box-shadow: none !important;
+        -moz-appearance: textfield;
+        appearance: textfield;
+        text-align: center;
+        font-family: "JetBrains Mono", monospace;
+        width: 100%;
+        cursor: default;
+        font-weight: 600;
+      }
+      .balance::-webkit-outer-spin-button,
+      .balance::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      td input[type="text"][readonly] {
+        cursor: default;
+        color: var(--text-main);
+        font-family: "JetBrains Mono", monospace;
+        padding: 6px;
+      }
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        background: #fff;
+        box-shadow: 0 0 0 3px var(--primary-glow);
+      }
+      input:disabled:not(.quantity-in):not(.quantity-out):not(.balance) {
+        background-color: #f1f5f9;
+        color: #94a3b8;
+        cursor: not-allowed;
+        border: 1px solid transparent;
+      }
+      /* QTY OUT is always shown in red, regardless of highlight state */
+      .quantity-out {
+        color: var(--danger);
+        font-weight: 700;
+      }
+      .qty-highlight {
+        color: #15803d;
+        font-weight: 700;
+        background-color: rgba(22, 163, 74, 0.1);
+        border: 1px solid rgba(22, 163, 74, 0.2);
+        animation: pulse-green 1.5s ease-in-out;
+      }
+      /* Override the shared green highlight specifically for QTY OUT so it stays red */
+      .quantity-out.qty-highlight {
+        color: var(--danger);
+        background-color: var(--danger-bg);
+        border: 1px solid rgba(220, 38, 38, 0.2);
+        animation: pulse-red 1.5s ease-in-out;
+      }
+      @keyframes pulse-green {
+        0% {
+          background-color: rgba(22, 163, 74, 0.05);
+        }
+        50% {
+          background-color: rgba(22, 163, 74, 0.2);
+        }
+        100% {
+          background-color: rgba(22, 163, 74, 0.1);
+        }
+      }
+      @keyframes pulse-red {
+        0% {
+          background-color: rgba(220, 38, 38, 0.05);
+        }
+        50% {
+          background-color: rgba(220, 38, 38, 0.2);
+        }
+        100% {
+          background-color: rgba(220, 38, 38, 0.1);
+        }
+      }
+      .updated-by-auto {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.75rem;
+        color: var(--primary-dark);
+        font-weight: 600;
+        background: rgba(8, 145, 178, 0.05);
+        padding: 3px 6px;
+        border-radius: 4px;
+        display: inline-block;
+        white-space: nowrap;
+      }
+      .dept-text,
+      .rcvd-text {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.82rem;
+        color: var(--text-main);
+        line-height: 1.2;
+      }
+      .balance-zero {
+        color: var(--danger) !important;
+        font-weight: 700 !important;
+        background: var(--danger-bg) !important;
+        border-radius: 4px;
+        display: block;
+        padding: 4px !important;
+      }
+      .balance-positive {
+        color: var(--success) !important;
+        font-weight: 600 !important;
+      }
+      .balance-hidden {
+        color: transparent !important;
+        background: transparent !important;
+        font-weight: 400 !important;
+      }
+
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .modal-overlay.show {
+        display: flex !important;
+        opacity: 1;
+      }
+      .modal-content {
+        background: var(--card-bg);
+        width: 90%;
+        max-width: 550px;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+      }
+      .modal-overlay.show .modal-content {
+        transform: scale(1);
+      }
+      .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+      }
+      .modal-header h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        line-height: 1;
+        padding: 0 5px;
+      }
+      .close-btn:hover {
+        color: var(--danger);
+      }
+      .modal-body {
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .form-group.full-width {
+        grid-column: span 2;
+      }
+      .form-group label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        border: 1px solid var(--border-color);
+        background: #f8fafc;
+        padding: 10px;
+        text-align: left;
+        border-radius: 6px;
+      }
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        border-color: var(--primary);
+        background: #fff;
+      }
+      .modal-footer {
+        padding: 20px;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        background: #f8fafc;
+      }
+      .color-preview {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .color-swatch {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 2px solid var(--border-color);
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .delete-confirm-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--danger-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        color: var(--danger);
+      }
+      .delete-confirm-text {
+        text-align: center;
+        color: var(--text-main);
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+      .delete-confirm-text strong {
+        color: var(--danger);
+      }
+      .delete-confirm-sub {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        margin-top: 8px;
+      }
+
+      .empty-table-msg {
+        text-align: center;
+        padding: 48px 20px;
+        color: var(--text-dim);
+      }
+      .empty-table-msg p {
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+      }
+      .empty-table-msg strong {
+        color: var(--primary);
+      }
+
+      #toast {
+        visibility: hidden;
+        min-width: 250px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 8px;
+        padding: 12px;
+        position: fixed;
+        z-index: 3000;
+        left: 50%;
+        bottom: 30px;
+        transform: translateX(-50%);
+        font-size: 0.85rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        opacity: 0;
+        transition:
+          opacity 0.5s,
+          visibility 0.5s;
+      }
+      #toast.show {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* â”€â”€ Autocomplete dropdowns â”€â”€ */
+      .autocomplete-wrapper {
+        position: relative;
+      }
+      .autocomplete-list {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid var(--primary);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(8,145,178,0.15);
+        z-index: 9999;
+        max-height: 210px;
+        overflow-y: auto;
+        display: none;
+      }
+      .autocomplete-list.show {
+        display: block;
+        animation: fadeIn 0.12s ease;
+      }
+      .autocomplete-item {
+        padding: 9px 12px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        transition: background 0.12s;
+      }
+      .autocomplete-item:last-child { border-bottom: none; }
+      .autocomplete-item:hover,
+      .autocomplete-item.ac-active { background: var(--primary-glow); }
+      .autocomplete-item .ac-primary {
+        font-weight: 700;
+        color: var(--primary-dark);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.8rem;
+      }
+      .autocomplete-item .ac-secondary {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+      }
+      .ac-match {
+        background: rgba(8,145,178,0.2);
+        border-radius: 2px;
+        padding: 0 2px;
+      }
+
+      @media screen and (max-width: 768px) {
+        .container {
+          padding: 15px;
+        }
+        .header {
+          flex-direction: column;
+          gap: 15px;
+          align-items: stretch;
+        }
+        .header-left {
+          justify-content: space-between;
+        }
+        .header-actions {
+          width: 100%;
+          align-items: center;
+          flex-direction: row;
+          justify-content: space-between;
+        }
+        .tab-nav {
+          width: 100%;
+          overflow-x: auto;
+        }
+        .table-actions {
+          flex-wrap: wrap;
+        }
+        .modal-body {
+          grid-template-columns: 1fr;
+        }
+        .form-group.full-width {
+          grid-column: span 1;
+        }
+      }
+      .module-background { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; background: radial-gradient(circle at 0% 0%, #e0e7ff 0%, #f8fafc 50%); }
+      .module-background canvas { width: 100%; height: 100%; display: block; }
+      [data-theme="light"] .module-background { background: radial-gradient(circle at 0% 0%, #e0e7ff 0%, #f8fafc 50%); }
+    </style>
+    <link rel="stylesheet" href="responsive.css" />
+  </head>
+  <body>
+    <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
+    <div class="module-background" aria-hidden="true"><canvas id="moduleBgCanvas"></canvas></div>
+    <!-- Transaction Modal -->
+    <div id="transactionModal" class="modal-overlay" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="1" y="3" width="15" height="13"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+            <span id="modalTitleText">Receive Item</span>
+          </h3>
+          <button class="close-btn" onclick="closeModal('transactionModal')">X</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="modalTableId" />
+          <input type="hidden" id="modalTransactionType" />
+          <input type="hidden" id="editRowSerial" />
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="modalDate" />
+          </div>
+          <div class="form-group">
+            <label>SVC NO.</label>
+            <div class="autocomplete-wrapper">
+              <input type="text" id="modalSvcNo" placeholder="Enter SVC NO" autocomplete="off" />
+              <div class="autocomplete-list" id="svcAutoList"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Rank</label>
+            <input type="text" id="modalRank" placeholder="Enter Rank" />
+          </div>
+          <div class="form-group">
+            <label>Name</label>
+            <div class="autocomplete-wrapper">
+              <input type="text" id="modalName" placeholder="Enter Name" autocomplete="off" />
+              <div class="autocomplete-list" id="nameAutoList"></div>
+            </div>
+          </div>
+          <div class="form-group" id="deptGroup">
+            <label>Department</label>
+            <div class="autocomplete-wrapper">
+              <input type="text" id="modalDept" class="auto-cap" placeholder="Enter Department" autocomplete="off" />
+              <div class="autocomplete-list" id="deptAutoList"></div>
+            </div>
+          </div>
+          <div class="form-group" id="qtyInGroup">
+            <label>Quantity In</label>
+            <input type="number" id="modalQtyIn" placeholder="0" min="0" />
+          </div>
+          <div class="form-group" id="qtyOutGroup" style="display: none">
+            <label>Quantity Out</label>
+            <input type="number" id="modalQtyOut" placeholder="0" min="0" />
+          </div>
+          <div class="form-group full-width" id="rcvdGroup">
+            <label>RCVD From</label>
+            <input type="text" id="modalRemarks" placeholder="Source Name" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn"
+            style="background: #f8fafc; color: var(--text-muted); border: 1px solid var(--border-color)"
+            onclick="closeModal('transactionModal')"
+          >
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="submitTransaction()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registry Modal (Create / Edit) -->
+    <div id="registryModal" class="modal-overlay" style="display: none">
+      <div class="modal-content" style="max-width: 420px">
+        <div class="modal-header">
+          <h3 id="registryModalTitle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"></path>
+            </svg>
+            <span>Create Store</span>
+          </h3>
+          <button class="close-btn" onclick="closeModal('registryModal')">Ã—</button>
+        </div>
+        <div class="modal-body" style="grid-template-columns: 1fr">
+          <input type="hidden" id="editRegistryId" value="" />
+          <div class="form-group">
+            <label>Store Name</label>
+            <input type="text" id="registryNameInput" placeholder="e.g. A4 PAPER" style="text-transform: uppercase" />
+          </div>
+          <div class="form-group">
+            <label>Color</label>
+            <div class="color-preview">
+              <input
+                type="color"
+                id="registryColorInput"
+                value="#0891b2"
+                style="
+                  width: 36px;
+                  height: 36px;
+                  padding: 0;
+                  border: none;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  background: none;
+                "
+              />
+              <span
+                id="registryColorHex"
+                style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 0.82rem; color: var(--text-muted)"
+              >
+                #0891b2
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn"
+            style="background: #f8fafc; color: var(--text-muted); border: 1px solid var(--border-color)"
+            onclick="closeModal('registryModal')"
+          >
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="submitRegistry()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal-overlay" style="display: none">
+      <div class="modal-content" style="max-width: 400px">
+        <div class="modal-header">
+          <h3>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Delete Store
+          </h3>
+          <button class="close-btn" onclick="closeModal('deleteConfirmModal')">Ã—</button>
+        </div>
+        <div class="modal-body" style="grid-template-columns: 1fr; padding: 30px 20px">
+          <div class="delete-confirm-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </div>
+          <p class="delete-confirm-text">
+            Are you sure you want to delete
+            <br />
+            <strong id="deleteRegistryNameLabel">this store</strong>
+            ?
+          </p>
+          <p class="delete-confirm-sub">All transaction data in this store will be permanently lost.</p>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn"
+            style="background: #f8fafc; color: var(--text-muted); border: 1px solid var(--border-color)"
+            onclick="closeModal('deleteConfirmModal')"
+          >
+            Cancel
+          </button>
+          <button class="btn" style="background: var(--danger); color: #fff" onclick="confirmDeleteRegistry()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Context Menu -->
+    <div id="tabContextMenu" class="tab-context-menu">
+      <button class="edit-option" onclick="editRegistryFromMenu()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        Edit Store
+      </button>
+      <div class="menu-divider"></div>
+      <button class="delete-option" onclick="deleteRegistryFromMenu()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        Delete Store
+      </button>
+    </div>
+
+    <!-- Print Dropdown -->
+    <div id="printDropdown" class="print-dropdown">
+      <div class="print-dropdown-header">
+        <label>Select stores to print</label>
+        <button class="print-select-all" id="printSelectAllBtn" onclick="togglePrintSelectAll()">Select All</button>
+      </div>
+      <div class="print-store-list" id="printStoreList"></div>
+      <div class="print-dropdown-footer">
+        <button class="btn btn-primary" onclick="printSelectedStores()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Print Selected
+        </button>
+      </div>
+    </div>
+
+    <!-- Export Dropdown -->
+    <div id="exportDropdown" class="print-dropdown">
+      <div class="print-dropdown-header">
+        <label>Select stores to export</label>
+        <button class="print-select-all" id="exportSelectAllBtn" onclick="toggleExportSelectAll()">Select All</button>
+      </div>
+      <div class="print-store-list" id="exportStoreList"></div>
+      <div class="print-dropdown-footer">
+        <button class="btn btn-primary" onclick="exportSelectedStores()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export Selected
+        </button>
+      </div>
+    </div>
+
+    <div id="toast">Data Saved Successfully!</div>
+    <input type="file" id="payStoreImportInput" accept=".xlsx,.xls,.csv" hidden />
+
+    <div class="container">
+      <div class="header">
+        <div class="header-left">
+          <h2 id="tableTitle">Pay Printing Stores</h2>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="theme-toggle" onclick="toggleTheme()" aria-label="Switch theme" title="Switch theme"><svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8z" /></svg><svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></svg></button>
+          <div class="user-display">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <strong id="displayUserName">User</strong>
+          </div>
+          <div class="nav-dropdown-wrap" id="navDropdownWrap">
+            <button type="button" class="nav-toggle-btn" id="navToggleBtn" onclick="toggleNavDropdown(event)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+              Navigate
+            </button>
+            <div class="nav-dropdown-menu" id="navDropdownMenu">
+              <div class="nav-dropdown-profile">
+                <div class="nav-dropdown-avatar">DIT</div>
+                <div>
+                  <div class="nav-dropdown-profile-name">Stores System</div>
+                  <div class="nav-dropdown-profile-role">Admin</div>
+                </div>
+              </div>
+              <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
+              <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
+              <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
+              <a href="pay-stores.html" class="nav-dropdown-item active">Pay Stores</a>
+              <a href="jobscard.html" class="nav-dropdown-item">Jobs Card</a>
+              <a href="personnel.html" class="nav-dropdown-item">Personnel</a>
+              <a href="reports.html" class="nav-dropdown-item">Reports</a>
+              <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display: none">Admin Panel</a>
+              <div class="nav-dropdown-divider"></div>
+              <a href="dashboard.html" class="nav-dropdown-item logout" onclick="return handleLogout(event);">Logout</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-nav" id="tabNav"></div>
+
+      <div id="tableContainer"></div>
+    </div>
+
+    <script src="sql-storage.js"></script>
+    <script>
+      function toggleTheme() {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('dit_theme', 'light');
+      }
+      /* ============================================================
+   STATE & CONSTANTS
+   ============================================================ */
+      /* Department is now free-text (see DEPARTMENT AUTOSUGGEST below);
+         no fixed default department list is used anymore. */
+      var monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+      var monthShortNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      var defaultRegistries = [];
+
+      var colorPalette = [
+        "#059669",
+        "#2563eb",
+        "#9333ea",
+        "#c026d3",
+        "#dc2626",
+        "#d97706",
+        "#65a30d",
+        "#0d9488",
+        "#4f46e5",
+        "#be185d",
+        "#0369a1",
+        "#a21caf",
+      ];
+
+      var registries = [];
+      var nextIds = {};
+      var sortOrders = {};
+      var currentUser = "Guest";
+      var activeTableId = null;
+      var pendingDeleteId = null;
+      var contextMenuTargetId = null;
+      var nextRegistryNum = 1;
+      var saveTimers = {};
+      var printDropdownOpen = false;
+      var exportDropdownOpen = false;
+
+      /* ============================================================
+   IN-MEMORY DATA STORE (placeholder for SQL / database backend)
+   ------------------------------------------------------------
+  Persistent browser storage has been removed. Data now goes through
+  the small set of in-memory functions below
+   (dbLoadRegistries, dbSaveRegistries, dbLoadTable, dbSaveTable,
+   dbDeleteTable, dbLoadCurrentUser). They currently keep data in a
+   plain JS object for the lifetime of the page so the app keeps
+   working exactly as before. When the backend is ready, replace the
+   body of each function with the matching fetch()/AJAX call to your
+   API (e.g. GET/POST /api/registries, GET/POST /api/tables/:id) --
+   nothing else in the file needs to change.
+   ============================================================ */
+      var memoryStore = {
+        registries: null, /* array of registry objects, or null if not loaded yet */
+        nextRegistryNum: 1,
+        tables: {}, /* tableId -> { data, nextId, sortOrder } */
+        currentUser: null,
+        values: Object.create(null),
+        getItem: function (key) { try { var stored = localStorage.getItem(key); if (stored !== null) return stored; } catch (e) {} return Object.prototype.hasOwnProperty.call(this.values, key) ? this.values[key] : null; },
+        setItem: function (key, value) { this.values[key] = String(value); try { localStorage.setItem(key, String(value)); } catch (e) {} if (window.sqlStorageSet) window.sqlStorageSet(key, value); },
+        removeItem: function (key) { delete this.values[key]; try { localStorage.removeItem(key); } catch (e) {} },
+      };
+
+      var PAY_STORE_ACTIVITY_KEY = "dit_pay_stores_activity_v1";
+      var ACTIVITY_LOG_KEY = "dit_activity_log_v1";
+
+      function recordPayStoreActivity(action, tableId, data) {
+        try {
+          var timestamp = new Date().toISOString();
+          var rowDetail = [
+            "Table: " + ((getRegistry(tableId) || {}).name || tableId),
+            data.svcNo ? "Svc No: " + data.svcNo : "",
+            data.name ? "Name: " + data.name : "",
+            data.qtyIn ? "Qty in: " + data.qtyIn : "",
+            data.qtyOut ? "Qty out: " + data.qtyOut : "",
+            data.remarks ? "Remarks: " + data.remarks : "",
+          ].filter(Boolean).join(", ");
+          var activities = JSON.parse(memoryStore.getItem(PAY_STORE_ACTIVITY_KEY) || "[]");
+          activities.push({
+            action: action,
+            detail: (getRegistry(tableId) || {}).name || "Pay-store record",
+            date: timestamp,
+            user: currentUser,
+            quantity: data.qtyIn || data.qtyOut || 0,
+          });
+          memoryStore.setItem(PAY_STORE_ACTIVITY_KEY, JSON.stringify(activities.slice(-500)));
+          var auditActivities = JSON.parse(memoryStore.getItem(ACTIVITY_LOG_KEY) || "[]");
+          auditActivities.push({
+            module: "printing",
+            action: action,
+            detail: rowDetail || "Table: " + ((getRegistry(tableId) || {}).name || tableId),
+            user: currentUser,
+            date: timestamp,
+          });
+          memoryStore.setItem(ACTIVITY_LOG_KEY, JSON.stringify(auditActivities.slice(-1000)));
+        } catch (e) {}
+      }
+
+      async function dbLoadRegistries() {
+        if (memoryStore.registries !== null) {
+          return { registries: memoryStore.registries, nextRegistryNum: memoryStore.nextRegistryNum };
+        }
+        var storedValue = memoryStore.getItem('payStore.registries');
+        if (!storedValue && window.sqlStorageGet) {
+          try { storedValue = await window.sqlStorageGet('payStore.registries'); } catch (e) {}
+        }
+        if (!storedValue) return null;
+        try {
+          var parsed = JSON.parse(storedValue);
+          memoryStore.registries = parsed.registries;
+          memoryStore.nextRegistryNum = parsed.nextRegistryNum || 1;
+          return parsed;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function dbSaveRegistries(registriesArr, nextNum) {
+        memoryStore.registries = registriesArr;
+        memoryStore.nextRegistryNum = nextNum;
+        memoryStore.setItem('payStore.registries', JSON.stringify({ registries: registriesArr, nextRegistryNum: nextNum }));
+      }
+
+      function dbLoadTable(tableId) {
+        return memoryStore.tables[tableId] || null;
+      }
+
+      async function dbHydrateTable(tableId) {
+        if (memoryStore.tables[tableId]) return memoryStore.tables[tableId];
+        var key = 'payStore.table.' + tableId;
+        var storedValue = memoryStore.getItem(key);
+        if (!storedValue && window.sqlStorageGet) {
+          try { storedValue = await window.sqlStorageGet(key); } catch (e) {}
+        }
+        if (!storedValue) return null;
+        try {
+          var parsed = JSON.parse(storedValue);
+          memoryStore.tables[tableId] = parsed;
+          return parsed;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function dbSaveTable(tableId, saveObj) {
+        memoryStore.tables[tableId] = saveObj;
+        memoryStore.setItem('payStore.table.' + tableId, JSON.stringify(saveObj));
+      }
+
+      function dbDeleteTable(tableId) {
+        delete memoryStore.tables[tableId];
+        memoryStore.removeItem('payStore.table.' + tableId);
+        if (window.sqlStorageDelete) window.sqlStorageDelete('payStore.table.' + tableId);
+      }
+
+      function dbLoadCurrentUser() {
+        /* TODO: replace with the logged-in user from your auth/session/DB layer */
+        return memoryStore.currentUser;
+      }
+
+      /* ============================================================
+   UTILITY FUNCTIONS
+   ============================================================ */
+      function capitalizeWords(str) {
+        if (!str) return "";
+        return str.replace(/\b\w/g, function (l) {
+          return l.toUpperCase();
+        });
+      }
+
+      function toDisplayDate(isoDate) {
+        if (!isoDate) return "";
+        var parts = isoDate.split("-");
+        if (parts.length === 3 && parts[0].length === 4) {
+          var day = parts[2];
+          var month = monthShortNames[parseInt(parts[1], 10) - 1] || parts[1];
+          var year = parts[0];
+          return day + " " + month + " " + year;
+        }
+        return isoDate;
+      }
+
+      function toIsoDate(displayDate) {
+        if (!displayDate) return "";
+        var isoParts = displayDate.split("-");
+        if (isoParts.length === 3 && isoParts[0].length === 4) return displayDate;
+        var match = displayDate.match(/^(\d{1,2})[ -](.+)[ -](\d{4})$/);
+        if (match) {
+          var day = match[1].padStart(2, "0");
+          var mName = match[2].trim();
+          var year = match[3];
+          var mIdx = monthNames.findIndex(function (m, index) {
+            return m.toLowerCase() === mName.toLowerCase() || monthShortNames[index].toLowerCase() === mName.toLowerCase();
+          });
+          if (mIdx !== -1) {
+            var month = String(mIdx + 1).padStart(2, "0");
+            return year + "-" + month + "-" + day;
+          }
+        }
+        if (isoParts.length === 3) return isoParts[2] + "-" + isoParts[1] + "-" + isoParts[0];
+        return displayDate;
+      }
+
+      function generateRegistryId(name) {
+        var base = name
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "_")
+          .replace(/_+/g, "_")
+          .replace(/^_|_$/g, "");
+        var id = base || "REG";
+        var counter = nextRegistryNum;
+        while (
+          registries.find(function (r) {
+            return r.id === id + (counter > 1 ? "_" + counter : "");
+          })
+        ) {
+          counter++;
+        }
+        return id + (counter > 1 ? "_" + counter : "") || "REG_" + counter;
+      }
+
+      function showToast(message) {
+        var x = document.getElementById("toast");
+        x.textContent = message;
+        x.className = "show";
+        setTimeout(function () {
+          x.className = x.className.replace("show", "");
+        }, 2500);
+      }
+
+      function escHtml(str) {
+        if (!str) return "";
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+
+      /* Safe number parser â€” trims whitespace, returns 0 for NaN */
+      function safeNum(val) {
+        var n = parseFloat(String(val || "0").trim());
+        return isNaN(n) ? 0 : n;
+      }
+
+      /* ============================================================
+   DATE ORDERING HELPERS
+   ------------------------------------------------------------
+   Rows are always kept arranged in date order. When two rows share
+   the same date, the row that was entered first (lower dataset.id)
+   keeps coming first, so same-day entries stay in the order they
+   were added.
+   ============================================================ */
+      function getRowIsoDate(row) {
+        var input = row.cells[1] && row.cells[1].querySelector("input");
+        return toIsoDate(input ? input.value : "") || "";
+      }
+
+      function compareRowsByDate(a, b) {
+        var dateA = getRowIsoDate(a);
+        var dateB = getRowIsoDate(b);
+        if (dateA !== dateB) return dateA < dateB ? -1 : 1;
+        return parseInt(a.dataset.id) - parseInt(b.dataset.id);
+      }
+
+      /* Re-arrange a table's rows in date order (respecting the table's
+         current asc/desc toggle), then renumber the SRL column. */
+      function resortTableByDate(tableId) {
+        var tbody = document.querySelector("#recordTable_" + tableId + " tbody");
+        if (!tbody) return;
+        var rows = Array.from(tbody.querySelectorAll("tr"));
+        var order = sortOrders[tableId] || "asc";
+        rows.sort(function (a, b) {
+          var cmp = compareRowsByDate(a, b);
+          return order === "asc" ? cmp : -cmp;
+        });
+        rows.forEach(function (row) {
+          tbody.appendChild(row);
+        });
+        renumberSrl(tableId);
+      }
+
+      /* ============================================================
+   REGISTRY MANAGEMENT
+   ============================================================ */
+      async function loadRegistries() {
+        var stored = await dbLoadRegistries();
+        if (stored && Array.isArray(stored.registries)) {
+          registries = stored.registries;
+          nextRegistryNum = stored.nextRegistryNum || 1;
+        } else {
+          registries = defaultRegistries.slice();
+          nextRegistryNum = 1;
+        }
+      }
+
+      function saveRegistriesToStorage() {
+        dbSaveRegistries(registries, nextRegistryNum);
+      }
+
+      function getRegistry(id) {
+        return registries.find(function (r) {
+          return r.id === id;
+        });
+      }
+
+      /* ============================================================
+   DATA PERSISTENCE
+   ============================================================ */
+      function saveTableData(tableId) {
+        var tbody = document.querySelector("#recordTable_" + tableId + " tbody");
+        if (!tbody) return;
+        var rows = tbody.querySelectorAll("tr");
+        var data = [];
+        rows.forEach(function (row) {
+          var dateInput = row.cells[1].querySelector("input");
+          var dateVal = dateInput ? dateInput.value : "";
+          var isoDate = toIsoDate(dateVal) || dateVal;
+
+          var rowData = [
+            row.dataset.id,
+            isoDate,
+            row.cells[2].querySelector("input") ? row.cells[2].querySelector("input").value : "-",
+            row.cells[3].querySelector("input") ? row.cells[3].querySelector("input").value : "-",
+            row.cells[4].querySelector("input") ? row.cells[4].querySelector("input").value : "-",
+            row.cells[5].querySelector(".dept-text") ? row.cells[5].querySelector(".dept-text").innerText : "N/A",
+            row.cells[6].querySelector("input") ? row.cells[6].querySelector("input").value : "EACH",
+            row.cells[7].querySelector("input") ? row.cells[7].querySelector("input").value : 0,
+            row.cells[8].querySelector("input") ? row.cells[8].querySelector("input").value : 0,
+            row.cells[9].querySelector("input") ? row.cells[9].querySelector("input").value : 0,
+            row.cells[10].querySelector(".rcvd-text") ? row.cells[10].querySelector(".rcvd-text").innerText : "-",
+            row.cells[11].querySelector(".updated-by-auto")
+              ? row.cells[11].querySelector(".updated-by-auto").innerText
+              : currentUser,
+          ];
+          data.push(rowData);
+        });
+
+        var saveObj = {
+          data: data,
+          nextId: nextIds[tableId] || 1,
+          sortOrder: sortOrders[tableId] || "asc",
+        };
+
+        dbSaveTable(tableId, saveObj);
+      }
+
+      function saveAllTableData() {
+        registries.forEach(function (reg) {
+          saveTableData(reg.id);
+        });
+      }
+
+      function debouncedSave(tableId) {
+        if (saveTimers[tableId]) clearTimeout(saveTimers[tableId]);
+        saveTimers[tableId] = setTimeout(function () {
+          saveTableData(tableId);
+        }, 600);
+      }
+
+      /* ============================================================
+   SRL RENUMBERING â€” always 1, 2, 3â€¦ in visual order
+   ============================================================ */
+      function renumberSrl(tableId) {
+        var tbody = document.querySelector("#recordTable_" + tableId + " tbody");
+        if (!tbody) return;
+        var rows = tbody.querySelectorAll("tr");
+        rows.forEach(function (row, index) {
+          row.cells[0].textContent = index + 1;
+        });
+      }
+
+      /* ============================================================
+   RENDERING
+   ============================================================ */
+      function renderTabs() {
+        var nav = document.getElementById("tabNav");
+        nav.innerHTML = "";
+
+        registries.forEach(function (reg) {
+          var item = document.createElement("div");
+          item.className = "tab-item";
+
+          var btn = document.createElement("button");
+          btn.className = "tab-btn" + (activeTableId === reg.id ? " active" : "");
+          btn.style.setProperty("--tab-color", reg.color);
+          btn.innerHTML =
+            '<span class="tab-color-dot" style="background:' + reg.color + ';"></span><span>' + reg.name + "</span>";
+          btn.onclick = function () {
+            showTable(reg.id);
+          };
+
+          var menuBtn = document.createElement("button");
+          menuBtn.className = "tab-menu-trigger";
+          menuBtn.innerHTML = "&#8942;";
+          menuBtn.onclick = function (e) {
+            e.stopPropagation();
+            showTabMenu(e, reg.id);
+          };
+
+          item.appendChild(btn);
+          item.appendChild(menuBtn);
+          nav.appendChild(item);
+        });
+
+        var addBtn = document.createElement("button");
+        addBtn.className = "tab-add-btn";
+        addBtn.innerHTML = "+";
+        addBtn.title = "Create new store";
+        addBtn.onclick = openCreateRegistryModal;
+        nav.appendChild(addBtn);
+
+        var printBtn = document.createElement("button");
+        printBtn.className = "print-btn" + (printDropdownOpen ? " dropdown-open" : "");
+        printBtn.id = "printBtnTrigger";
+        printBtn.innerHTML =
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+          '<polyline points="6 9 6 2 18 2 18 9"/>' +
+          '<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>' +
+          '<rect x="6" y="14" width="12" height="8"/>' +
+          "</svg>" +
+          ' Print <span class="arrow">&#9660;</span>';
+        printBtn.title = "Print stores";
+        printBtn.onclick = function (e) {
+          togglePrintDropdown(e);
+        };
+        nav.appendChild(printBtn);
+
+        var exportBtn = document.createElement("button");
+        exportBtn.className = "print-btn export-btn" + (exportDropdownOpen ? " dropdown-open" : "");
+        exportBtn.id = "exportBtnTrigger";
+        exportBtn.innerHTML =
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+          '<path d="M12 3v12"/><polyline points="7 10 12 15 17 10" transform="rotate(180 12 9)"/>' +
+          '<path d="M5 21h14a2 2 0 0 0 2-2v-4M3 15v4a2 2 0 0 0 2 2"/>' +
+          "</svg>" +
+          ' Export <span class="arrow">&#9660;</span>';
+        exportBtn.title = "Export stores";
+        exportBtn.onclick = function (e) {
+          toggleExportDropdown(e);
+        };
+        nav.appendChild(exportBtn);
+
+        var importBtn = document.createElement("button");
+        importBtn.className = "print-btn import-btn";
+        importBtn.id = "importBtnTrigger";
+        importBtn.innerHTML =
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+          '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+          '<polyline points="7 10 12 15 17 10"/>' +
+          '<line x1="12" y1="15" x2="12" y2="3"/>' +
+          "</svg> Import";
+        importBtn.title = "Import a pay-store backup";
+        importBtn.onclick = function () {
+          var input = document.getElementById("payStoreImportInput");
+          input.value = "";
+          input.click();
+        };
+        nav.appendChild(importBtn);
+      }
+
+      function renderTableCards() {
+        var container = document.getElementById("tableContainer");
+        container.innerHTML = "";
+
+        var emptyCard = document.createElement("div");
+        emptyCard.className = "table-card";
+        emptyCard.id = "view_empty";
+        emptyCard.style.display = !activeTableId ? "block" : "none";
+
+        emptyCard.innerHTML =
+          '<div class="table-card-header" style="background:var(--primary);"></div>' +
+          '<div class="table-actions">' +
+          '<button class="btn btn-receive" disabled>' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>' +
+          " Receive" +
+          "</button>" +
+          '<button class="btn btn-issue" disabled>' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>' +
+          " Issue" +
+          "</button>" +
+          "</div>" +
+          '<div class="table-wrapper">' +
+          '<table id="recordTable_empty">' +
+          "<thead><tr>" +
+          "<th>SRL</th><th>DATE</th><th>SVC NO.</th><th>RANK</th><th>NAME</th><th>DEPT.</th><th>D OF Q</th><th>QTY IN</th><th>QTY OUT</th><th>BAL</th><th>RCVD From</th><th class=\"user-id-column\">User id</th><th class=\"action-column\">ACTION</th>" +
+          "</tr></thead>" +
+          "<tbody></tbody>" +
+          "</table>" +
+          '<div class="empty-table-msg">' +
+          "<p>No store created yet.</p>" +
+          "<p>Click <strong>+</strong> to create one.</p>" +
+          "</div>" +
+          "</div>";
+
+        container.appendChild(emptyCard);
+
+        registries.forEach(function (reg) {
+          var card = document.createElement("div");
+          card.className = "table-card";
+          card.id = "view_" + reg.id;
+          card.style.display = activeTableId === reg.id ? "block" : "none";
+
+          card.innerHTML =
+            '<div class="table-card-header" style="background:' +
+            reg.color +
+            ';"></div>' +
+            '<div class="table-actions">' +
+            '<button class="btn btn-receive" onclick="openModal(\'' +
+            reg.id +
+            "', 'receive')\">" +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>' +
+            " Receive" +
+            "</button>" +
+            '<button class="btn btn-issue" onclick="openModal(\'' +
+            reg.id +
+            "', 'issue')\">" +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>' +
+            " Issue" +
+            "</button>" +
+            "</div>" +
+            '<div class="table-wrapper">' +
+            '<table id="recordTable_' +
+            reg.id +
+            '">' +
+            "<thead><tr>" +
+            '<th class="th-sortable" onclick="sortTable(\'' +
+            reg.id +
+            '\')"><div class="th-content">SRL <span class="sort-icon" id="sortIcon_' +
+            reg.id +
+            '">&#8595;</span></div></th>' +
+            "<th>DATE</th>" +
+            "<th>SVC NO.</th>" +
+            "<th>RANK</th>" +
+            "<th>NAME</th>" +
+            "<th>DEPT.</th>" +
+            "<th>D OF Q</th>" +
+            "<th>QTY IN</th>" +
+            "<th>QTY OUT</th>" +
+            "<th>BAL</th>" +
+            "<th>RCVD From</th>" +
+            '<th class="user-id-column">User id</th>' +
+            '<th class="action-column">ACTION</th>' +
+            "</tr></thead>" +
+            "<tbody></tbody>" +
+            "</table>" +
+            "</div>";
+
+          container.appendChild(card);
+        });
+      }
+
+      /* ============================================================
+   SHOW TABLE
+   ============================================================ */
+      function showTable(tableId) {
+        activeTableId = tableId;
+        document.querySelectorAll(".table-card").forEach(function (t) {
+          t.style.display = "none";
+        });
+
+        if (tableId) {
+          var view = document.getElementById("view_" + tableId);
+          if (view) view.style.display = "block";
+          var reg = getRegistry(tableId);
+          document.getElementById("tableTitle").textContent = reg
+            ? reg.name + " - PAY PRINTING STORES"
+            : "PAY PRINTING STORES";
+          updateTableScroll(tableId);
+        } else {
+          var emptyView = document.getElementById("view_empty");
+          if (emptyView) emptyView.style.display = "block";
+          document.getElementById("tableTitle").textContent = "PAY PRINTING STORES";
+        }
+
+        renderTabs();
+      }
+
+      /* ============================================================
+   TAB CONTEXT MENU
+   ============================================================ */
+      function showTabMenu(event, registryId) {
+        event.stopPropagation();
+        closePrintDropdown();
+        contextMenuTargetId = registryId;
+        var menu = document.getElementById("tabContextMenu");
+        var rect = event.currentTarget.getBoundingClientRect();
+        menu.style.top = rect.bottom + 4 + "px";
+        menu.style.left = rect.left + "px";
+        menu.classList.add("show");
+      }
+
+      function hideTabMenu() {
+        document.getElementById("tabContextMenu").classList.remove("show");
+        contextMenuTargetId = null;
+      }
+
+      function editRegistryFromMenu() {
+        var id = contextMenuTargetId;
+        hideTabMenu();
+        if (!id) return;
+        openEditRegistryModal(id);
+      }
+
+      function deleteRegistryFromMenu() {
+        var id = contextMenuTargetId;
+        hideTabMenu();
+        if (!id) return;
+        pendingDeleteId = id;
+        var reg = getRegistry(id);
+        document.getElementById("deleteRegistryNameLabel").textContent = reg ? reg.name : "this store";
+        var modal = document.getElementById("deleteConfirmModal");
+        modal.style.display = "flex";
+        modal.classList.add("show");
+      }
+
+      function confirmDeleteRegistry() {
+        if (!pendingDeleteId) return;
+        var id = pendingDeleteId;
+        recordPayStoreActivity("Deleted pay-store table", id, {});
+        registries = registries.filter(function (r) {
+          return r.id !== id;
+        });
+        saveRegistriesToStorage();
+        dbDeleteTable(id);
+        delete nextIds[id];
+        delete sortOrders[id];
+        if (activeTableId === id) {
+          activeTableId = registries.length > 0 ? registries[0].id : null;
+        }
+        renderTabs();
+        renderTableCards();
+        registries.forEach(function (reg) {
+          loadTableData(reg.id);
+        });
+        showTable(activeTableId);
+        closeModal("deleteConfirmModal");
+        pendingDeleteId = null;
+        showToast("Store deleted successfully!");
+      }
+
+      /* ============================================================
+   CREATE / EDIT REGISTRY MODAL
+   ============================================================ */
+      function openCreateRegistryModal() {
+        closePrintDropdown();
+        document.getElementById("editRegistryId").value = "";
+        document.getElementById("registryNameInput").value = "";
+        var nextColor = colorPalette[registries.length % colorPalette.length];
+        document.getElementById("registryColorInput").value = nextColor;
+        document.getElementById("registryColorHex").textContent = nextColor;
+        document.getElementById("registryModalTitle").querySelector("span").textContent = "Create Store";
+        var modal = document.getElementById("registryModal");
+        modal.style.display = "flex";
+        modal.classList.add("show");
+        document.getElementById("registryNameInput").focus();
+      }
+
+      function openEditRegistryModal(id) {
+        var reg = getRegistry(id);
+        if (!reg) return;
+        document.getElementById("editRegistryId").value = id;
+        document.getElementById("registryNameInput").value = reg.name;
+        document.getElementById("registryColorInput").value = reg.color;
+        document.getElementById("registryColorHex").textContent = reg.color;
+        document.getElementById("registryModalTitle").querySelector("span").textContent = "Edit Store";
+        var modal = document.getElementById("registryModal");
+        modal.style.display = "flex";
+        modal.classList.add("show");
+      }
+
+      function submitRegistry() {
+        var editId = document.getElementById("editRegistryId").value;
+        var name = document.getElementById("registryNameInput").value.trim().toUpperCase();
+        var color = document.getElementById("registryColorInput").value;
+        if (!name) {
+          alert("Please enter a store name.");
+          return;
+        }
+
+        if (editId) {
+          var reg = getRegistry(editId);
+          if (reg) {
+            reg.name = name;
+            reg.color = color;
+            recordPayStoreActivity("Updated pay-store table", editId, { name: name });
+          }
+        } else {
+          var id = generateRegistryId(name);
+          var newReg = { id: id, name: name, color: color };
+          registries.push(newReg);
+          nextIds[id] = 1;
+          sortOrders[id] = "asc";
+          recordPayStoreActivity("Created pay-store table", id, { name: name });
+        }
+
+        saveRegistriesToStorage();
+        renderTabs();
+        renderTableCards();
+        registries.forEach(function (reg) {
+          loadTableData(reg.id);
+        });
+
+        if (!editId) {
+          showTable(registries[registries.length - 1].id);
+        } else {
+          showTable(activeTableId || (registries.length > 0 ? registries[0].id : null));
+        }
+
+        closeModal("registryModal");
+        showToast(editId ? "Store updated!" : "Store created successfully!");
+      }
+
+      /* ============================================================
+   PRINT DROPDOWN & PRINT FUNCTIONALITY
+   ============================================================ */
+      function togglePrintDropdown(e) {
+        e.stopPropagation();
+        var dropdown = document.getElementById("printDropdown");
+        if (printDropdownOpen) {
+          closePrintDropdown();
+        } else {
+          hideTabMenu();
+          closeExportDropdown();
+          updatePrintDropdown();
+          var btn = e.currentTarget;
+          var rect = btn.getBoundingClientRect();
+          var dropdownWidth = 220;
+          var leftPos = rect.left;
+          if (leftPos + dropdownWidth > window.innerWidth) {
+            leftPos = window.innerWidth - dropdownWidth - 10;
+          }
+          dropdown.style.top = rect.bottom + 6 + "px";
+          dropdown.style.left = leftPos + "px";
+          dropdown.classList.add("show");
+          printDropdownOpen = true;
+          btn.classList.add("dropdown-open");
+        }
+      }
+
+      function closePrintDropdown() {
+        var dropdown = document.getElementById("printDropdown");
+        if (dropdown) dropdown.classList.remove("show");
+        printDropdownOpen = false;
+        var btn = document.getElementById("printBtnTrigger");
+        if (btn) btn.classList.remove("dropdown-open");
+      }
+
+      function updatePrintDropdown() {
+        var list = document.getElementById("printStoreList");
+        list.innerHTML = "";
+
+        if (registries.length === 0) {
+          list.innerHTML = '<div class="print-no-stores">No stores available</div>';
+          document.getElementById("printSelectAllBtn").style.display = "none";
+          return;
+        }
+
+        document.getElementById("printSelectAllBtn").style.display = "";
+
+        registries.forEach(function (reg) {
+          var label = document.createElement("label");
+          label.className = "print-store-item";
+          label.innerHTML =
+            '<input type="checkbox" class="print-store-check" value="' +
+            reg.id +
+            '"' +
+            (activeTableId === reg.id ? " checked" : "") +
+            ">" +
+            '<span class="color-dot" style="background:' +
+            reg.color +
+            ';"></span>' +
+            "<span>" +
+            escHtml(reg.name) +
+            "</span>";
+          list.appendChild(label);
+        });
+
+        updateSelectAllState();
+      }
+
+      function togglePrintSelectAll() {
+        var checkboxes = document.querySelectorAll(".print-store-check");
+        var allChecked = true;
+        checkboxes.forEach(function (cb) {
+          if (!cb.checked) allChecked = false;
+        });
+
+        checkboxes.forEach(function (cb) {
+          cb.checked = !allChecked;
+        });
+        updateSelectAllState();
+      }
+
+      function updateSelectAllState() {
+        var checkboxes = document.querySelectorAll(".print-store-check");
+        if (checkboxes.length === 0) return;
+        var allChecked = true;
+        checkboxes.forEach(function (cb) {
+          if (!cb.checked) allChecked = false;
+        });
+        var btn = document.getElementById("printSelectAllBtn");
+        btn.textContent = allChecked ? "Deselect All" : "Select All";
+      }
+
+      document.addEventListener("change", function (e) {
+        if (e.target.classList.contains("print-store-check")) {
+          updateSelectAllState();
+        }
+      });
+
+      function printSelectedStores() {
+        var checkboxes = document.querySelectorAll(".print-store-check:checked");
+        var selectedIds = [];
+        checkboxes.forEach(function (cb) {
+          selectedIds.push(cb.value);
+        });
+
+        if (selectedIds.length === 0) {
+          alert("Please select at least one store to print.");
+          return;
+        }
+
+        closePrintDropdown();
+
+        var html = generatePrintHTML(selectedIds);
+
+        /* --- FIX: Use hidden iframe instead of window.open --- */
+        var iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "none";
+        iframe.style.overflow = "hidden";
+        document.body.appendChild(iframe);
+
+        var doc = iframe.contentDocument || iframe.contentWindow.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
+
+        /* Wait for content to render, then print */
+        setTimeout(function () {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+
+          /* Remove iframe after print dialog closes */
+          setTimeout(function () {
+            if (iframe.parentNode) {
+              document.body.removeChild(iframe);
+            }
+          }, 500);
+        }, 300);
+        /* --- END FIX --- */
+      }
+
+      function payStoreLowerAlpha(index) {
+        var value = index + 1;
+        var label = "";
+        while (value > 0) {
+          value--;
+          label = String.fromCharCode(97 + (value % 26)) + label;
+          value = Math.floor(value / 26);
+        }
+        return label;
+      }
+
+      function generatePrintHTML(storeIds) {
+        var html = "<!DOCTYPE html><html><head><title>Pay Printing Stores - Print</title>";
+        html += "<style>";
+
+        html += "<style>";
+        html += "@page { margin: 18mm 10mm; size: A4; }";
+        html +=
+          "body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 0; color: #000; font-size: 11px; }";
+        html += "body::before, body::after { position: fixed; left: 0; right: 0; text-align: center; font-size: 9px; font-weight: 700; letter-spacing: 1px; color: #000; z-index: 10; }";
+        html += "body::before { display: none !important; }";
+        html += "body::after { content: 'Restricted'; bottom: 3mm; }";
+        html +=
+          ".page-header { text-align: center; margin-bottom: 8px; border-bottom: 2px solid #333; padding-bottom: 8px; }";
+        html += ".page-header h1 { margin: 0; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }";
+        html += ".page-header .subtitle { margin: 4px 0 0; font-size: 10px; color: #555; }";
+        html += ".page-header .print-date { display: none !important; }";
+
+        /* Fix: allow sections to break across pages, avoid blank gaps */
+        html += ".store-section { margin-bottom: 22px; page-break-inside: auto; page-break-after: auto; }";
+        html += ".store-section:last-child { margin-bottom: 0; }";
+        html +=
+          ".store-title { display: flex; align-items: center; gap: 8px; margin: 14px 0 6px; page-break-after: avoid; }";
+        html += ".store-title .bar { width: 4px; height: 16px; border-radius: 2px; flex-shrink: 0; background: #000 !important; }";
+        html +=
+          ".store-title h2 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; page-break-after: avoid; }";
+        html += "table { width: 100%; border-collapse: collapse; font-size: 10.5px; page-break-inside: auto; }";
+        html += "th, td { border: 1px solid #444; padding: 4px 6px; text-align: center; }";
+        html +=
+          "th { background: #d9d9d9; font-weight: bold; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.3px; }";
+        html += "td.name-col { text-align: left; padding-left: 8px; }";
+        html += "tr:nth-child(even) td { background: #f7f7f7; }";
+        html += ".empty-msg { text-align: center; padding: 14px; color: #999; font-style: italic; }";
+        html += ".no-data { text-align: center; padding: 10px; color: #aaa; font-style: italic; font-size: 10px; }";
+        html += "tr { page-break-inside: avoid; }";
+        html += "thead { display: table-header-group; }";
+        html += "tfoot { display: table-footer-group; }";
+        html += "</style>";
+
+        storeIds.forEach(function (storeId) {
+          var reg = getRegistry(storeId);
+          if (!reg) return;
+
+          /* Always work in true chronological (date) order first, regardless
+             of whatever asc/desc toggle is currently applied on-screen. */
+          var allRows = Array.from(document.querySelectorAll("#recordTable_" + storeId + " tbody tr"));
+          allRows.sort(compareRowsByDate);
+
+          /* Printing a single store: print the full history, starting from
+             the very first date of entry. Printing multiple stores at once:
+             keep each store's section short by only printing its last 10
+             transactions (most recent), so the combined printout stays
+             manageable. */
+          var singleStorePrint = storeIds.length === 1;
+          var rows = singleStorePrint ? allRows : allRows.slice(-10);
+          var srlOffset = allRows.length - rows.length;
+
+          html += '<div class="store-section">';
+          html += '<div class="store-title">';
+          html += '<div class="bar" style="background:#000 !important;"></div>';
+          html += "<h2>" + escHtml(reg.name) + "</h2>";
+          if (!singleStorePrint && allRows.length > rows.length) {
+            html += '<span style="font-size:9px; color:#888; margin-left:6px;">(last ' + rows.length + " of " + allRows.length + " transactions)</span>";
+          }
+          html += "</div>";
+
+          html += "<table>";
+          html += "<thead><tr>";
+          html += '<th style="width:30px;">Srl</th>';
+          html += '<th style="width:75px;">Date</th>';
+          html += '<th style="width:60px;">SVC No</th>';
+          html += '<th style="width:55px;">Rank</th>';
+          html += "<th>Name</th>";
+          html += '<th style="width:45px;">Qty In</th>';
+          html += '<th style="width:45px;">Qty Out</th>';
+          html += '<th style="width:45px;">Bal</th>';
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          if (rows.length === 0) {
+            html += '<tr><td colspan="8" class="no-data">No records found</td></tr>';
+          } else {
+            rows.forEach(function (row, printIndex) {
+              var srl = srlOffset + printIndex + 1;
+              var date = row.cells[1].querySelector("input") ? row.cells[1].querySelector("input").value : "";
+              var svcNo = row.cells[2].querySelector("input") ? row.cells[2].querySelector("input").value : "";
+              var rank = row.cells[3].querySelector("input") ? row.cells[3].querySelector("input").value : "";
+              var name = row.cells[4].querySelector("input") ? row.cells[4].querySelector("input").value : "";
+              var qtyIn = row.cells[7].querySelector("input") ? row.cells[7].querySelector("input").value : "0";
+              var qtyOut = row.cells[8].querySelector("input") ? row.cells[8].querySelector("input").value : "0";
+              var balInput = row.cells[9].querySelector("input");
+              var bal = "";
+              if (balInput && !balInput.classList.contains("balance-hidden")) {
+                bal = balInput.value;
+              }
+
+              html += "<tr>";
+              html += "<td>" + srl + "</td>";
+              html += "<td>" + escHtml(date) + "</td>";
+              html += "<td>" + escHtml(svcNo) + "</td>";
+              html += "<td>" + escHtml(rank) + "</td>";
+              html += '<td class="name-col">' + escHtml(name) + "</td>";
+              html += "<td>" + escHtml(qtyIn) + "</td>";
+              html += "<td>" + escHtml(qtyOut) + "</td>";
+              html += "<td>" + escHtml(bal) + "</td>";
+              html += "</tr>";
+            });
+          }
+
+          html += "</tbody></table>";
+          html += "</div>";
+        });
+
+        html += "</body></html>";
+        return html;
+      }
+
+      /* ============================================================
+   EXPORT DROPDOWN & EXPORT-SELECTED FUNCTIONALITY
+   ============================================================ */
+      function toggleExportDropdown(e) {
+        e.stopPropagation();
+        var dropdown = document.getElementById("exportDropdown");
+        if (exportDropdownOpen) {
+          closeExportDropdown();
+        } else {
+          hideTabMenu();
+          closePrintDropdown();
+          updateExportDropdown();
+          var btn = e.currentTarget;
+          var rect = btn.getBoundingClientRect();
+          var dropdownWidth = 220;
+          var leftPos = rect.left;
+          if (leftPos + dropdownWidth > window.innerWidth) {
+            leftPos = window.innerWidth - dropdownWidth - 10;
+          }
+          dropdown.style.top = rect.bottom + 6 + "px";
+          dropdown.style.left = leftPos + "px";
+          dropdown.classList.add("show");
+          exportDropdownOpen = true;
+          btn.classList.add("dropdown-open");
+        }
+      }
+
+      function closeExportDropdown() {
+        var dropdown = document.getElementById("exportDropdown");
+        if (dropdown) dropdown.classList.remove("show");
+        exportDropdownOpen = false;
+        var btn = document.getElementById("exportBtnTrigger");
+        if (btn) btn.classList.remove("dropdown-open");
+      }
+
+      function updateExportDropdown() {
+        var list = document.getElementById("exportStoreList");
+        list.innerHTML = "";
+
+        if (registries.length === 0) {
+          list.innerHTML = '<div class="print-no-stores">No stores available</div>';
+          document.getElementById("exportSelectAllBtn").style.display = "none";
+          return;
+        }
+
+        document.getElementById("exportSelectAllBtn").style.display = "";
+
+        registries.forEach(function (reg) {
+          var label = document.createElement("label");
+          label.className = "print-store-item";
+          label.innerHTML =
+            '<input type="checkbox" class="export-store-check" value="' +
+            reg.id +
+            '"' +
+            (activeTableId === reg.id ? " checked" : "") +
+            ">" +
+            '<span class="color-dot" style="background:' +
+            reg.color +
+            ';"></span>' +
+            "<span>" +
+            escHtml(reg.name) +
+            "</span>";
+          list.appendChild(label);
+        });
+
+        updateExportSelectAllState();
+      }
+
+      function toggleExportSelectAll() {
+        var checkboxes = document.querySelectorAll(".export-store-check");
+        var allChecked = true;
+        checkboxes.forEach(function (cb) {
+          if (!cb.checked) allChecked = false;
+        });
+
+        checkboxes.forEach(function (cb) {
+          cb.checked = !allChecked;
+        });
+        updateExportSelectAllState();
+      }
+
+      function updateExportSelectAllState() {
+        var checkboxes = document.querySelectorAll(".export-store-check");
+        if (checkboxes.length === 0) return;
+        var allChecked = true;
+        checkboxes.forEach(function (cb) {
+          if (!cb.checked) allChecked = false;
+        });
+        var btn = document.getElementById("exportSelectAllBtn");
+        btn.textContent = allChecked ? "Deselect All" : "Select All";
+      }
+
+      document.addEventListener("change", function (e) {
+        if (e.target.classList.contains("export-store-check")) {
+          updateExportSelectAllState();
+        }
+      });
+
+      function exportSelectedStores() {
+        var checkboxes = document.querySelectorAll(".export-store-check:checked");
+        var selectedIds = [];
+        checkboxes.forEach(function (cb) {
+          selectedIds.push(cb.value);
+        });
+
+        if (selectedIds.length === 0) {
+          alert("Please select at least one store to export.");
+          return;
+        }
+
+        closeExportDropdown();
+
+        var allSelected = registries.length > 0 && selectedIds.length === registries.length;
+
+        if (allSelected) {
+          /* All stores selected: combine every store onto one sheet in a single
+             Excel workbook, mirroring how "Print Selected" puts every store on
+             one printout when all stores are chosen. */
+          exportAllStoresToExcel(selectedIds);
+        } else {
+          /* Partial selection: keep the existing behaviour of one CSV per store */
+          selectedIds.forEach(function (storeId) {
+            exportToCSV(storeId);
+          });
+        }
+      }
+
+      async function exportAllStoresToExcel(storeIds) {
+        if (typeof XLSX === "undefined") {
+          alert("Excel export library failed to load. Please check your internet connection and try again.");
+          return;
+        }
+
+        var headers = ["SRL", "DATE", "SVC NO.", "RANK", "NAME", "DEPT.", "D OF Q", "QTY IN", "QTY OUT", "BAL", "RCVD From"];
+        var aoa = [];
+        var merges = [];
+        var lastCol = headers.length - 1;
+        var anyData = false;
+
+        for (var storeIndex = 0; storeIndex < storeIds.length; storeIndex++) {
+          var storeId = storeIds[storeIndex];
+          var reg = getRegistry(storeId);
+          var parsed = dbLoadTable(storeId);
+          var savedData = parsed ? (Array.isArray(parsed) ? parsed : parsed.data) || [] : [];
+
+          /* Store title row (merged across all columns) */
+          var titleRowIndex = aoa.length;
+          aoa.push([reg ? reg.name : storeId]);
+          merges.push({ s: { r: titleRowIndex, c: 0 }, e: { r: titleRowIndex, c: lastCol } });
+
+          /* Column header row */
+          aoa.push(headers.slice());
+
+          if (!savedData.length) {
+            var noDataRowIndex = aoa.length;
+            aoa.push(["No records found"]);
+            merges.push({ s: { r: noDataRowIndex, c: 0 }, e: { r: noDataRowIndex, c: lastCol } });
+          } else {
+            anyData = true;
+            savedData.forEach(function (row, idx) {
+              var dateVal = toDisplayDate(toIsoDate(row[1] || ""));
+              aoa.push([
+                idx + 1,
+                dateVal,
+                row[2] || "",
+                row[3] || "",
+                row[4] || "",
+                row[5] || "",
+                row[6] || "",
+                row[7] || "",
+                row[8] || "",
+                row[9] || "",
+                row[10] || "",
+              ]);
+            });
+          }
+
+          /* Blank separator row between stores */
+          aoa.push([]);
+        }
+
+        if (!anyData) {
+          alert("No data to export!");
+          return;
+        }
+
+        var ws = XLSX.utils.aoa_to_sheet(aoa);
+        ws["!merges"] = merges;
+        ws["!cols"] = [
+          { wch: 6 },
+          { wch: 12 },
+          { wch: 10 },
+          { wch: 10 },
+          { wch: 22 },
+          { wch: 14 },
+          { wch: 10 },
+          { wch: 8 },
+          { wch: 8 },
+          { wch: 8 },
+          { wch: 14 },
+        ];
+
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "All Stores");
+        XLSX.writeFile(wb, "all_pay_printing_stores.xlsx");
+      }
+
+      /* Find an existing registry by name (case-insensitive), or null */
+      function findRegistryByName(name) {
+        var normalized = (name || "").trim().toUpperCase();
+        if (!normalized) return null;
+        return registries.find(function (r) {
+          return r.name.trim().toUpperCase() === normalized;
+        }) || null;
+      }
+
+      /* Create a new store registry (mirrors submitRegistry's "create" path)
+         and return it. Does not persist to storage or re-render â€” callers
+         that create several stores in a batch should do that once at the end. */
+      function createRegistryFromName(name) {
+        var cleanName = (name || "").trim().toUpperCase();
+        var id = generateRegistryId(cleanName);
+        var color = colorPalette[registries.length % colorPalette.length];
+        var newReg = { id: id, name: cleanName, color: color };
+        registries.push(newReg);
+        nextIds[id] = 1;
+        sortOrders[id] = "asc";
+        return newReg;
+      }
+
+      async function importPayStoreBackup(event) {
+        var file = event.target.files && event.target.files[0];
+        if (!file) return;
+        if (typeof XLSX === "undefined") {
+          alert("Excel import library failed to load. Please check your internet connection and try again.");
+          return;
+        }
+
+        try {
+          var workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
+          var sheet = workbook.Sheets["All Stores"] || workbook.Sheets[workbook.SheetNames[0]];
+          if (!sheet) throw new Error("No worksheet found");
+          var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
+          var sections = [];
+
+          for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+            var row = rows[rowIndex];
+            if (String(row[0]).trim().toUpperCase() !== "SRL" || String(row[1]).trim().toUpperCase() !== "DATE") continue;
+            var title = "";
+            for (var titleIndex = rowIndex - 1; titleIndex >= 0; titleIndex--) {
+              var titleRow = rows[titleIndex] || [];
+              var titleValue = String(titleRow[0] || "").trim();
+              var titleHasOnlyOneValue = titleValue && titleRow.slice(1).every(function (cell) {
+                return !String(cell || "").trim();
+              });
+              if (titleHasOnlyOneValue) {
+                title = titleValue;
+                break;
+              }
+            }
+            var sectionRows = [];
+            for (var dataIndex = rowIndex + 1; dataIndex < rows.length; dataIndex++) {
+              var dataRow = rows[dataIndex];
+              if (String(dataRow[0]).trim().toUpperCase() === "SRL" && String(dataRow[1]).trim().toUpperCase() === "DATE") break;
+              if (!String(dataRow[0]).trim() || String(dataRow[0]).trim().toLowerCase() === "no records found") continue;
+              if (dataRow.slice(1).every(function (cell) {
+                return !String(cell || "").trim();
+              })) continue;
+              sectionRows.push(dataRow);
+            }
+            sections.push({ title: title, rows: sectionRows });
+          }
+
+          if (sections.length === 0) throw new Error("The workbook does not contain the exported pay-store columns.");
+
+          /* Resolve (or automatically create) a target store for every
+             section that has data. Sections without a title fall back to
+             the currently active store, if any. */
+          var createdStoreNames = [];
+          var plan = []; /* [{ targetId, rows }] */
+
+          sections.forEach(function (section) {
+            if (!section.rows.length) return;
+            var storeName = (section.title || "").trim();
+            var targetId = null;
+
+            if (storeName) {
+              var existing = findRegistryByName(storeName);
+              if (existing) {
+                targetId = existing.id;
+              } else {
+                var newReg = createRegistryFromName(storeName);
+                createdStoreNames.push(newReg.name);
+                targetId = newReg.id;
+              }
+            } else if (activeTableId) {
+              targetId = activeTableId;
+            }
+
+            if (targetId) plan.push({ targetId: targetId, rows: section.rows });
+          });
+
+          var totalRows = plan.reduce(function (sum, p) { return sum + p.rows.length; }, 0);
+          if (totalRows === 0) {
+            alert("No importable records were found in the workbook.");
+            return;
+          }
+
+          /* Persist + render any newly created stores before inserting rows,
+             so their table DOM exists for addRowFromModal to write into. */
+          if (createdStoreNames.length) {
+            saveRegistriesToStorage();
+            renderTabs();
+            renderTableCards();
+          }
+
+          var typeInput = document.getElementById("modalTransactionType");
+          var previousType = typeInput ? typeInput.value : "receive";
+          if (typeInput) typeInput.value = "receive";
+
+          plan.forEach(function (p) {
+            p.rows.forEach(function (dataRow) {
+              addRowFromModal(p.targetId, {
+                date: toIsoDate(String(dataRow[1] || "").trim()),
+                svcNo: String(dataRow[2] || "").trim(),
+                rank: String(dataRow[3] || "").trim(),
+                name: String(dataRow[4] || "").trim(),
+                dept: String(dataRow[5] || "").trim(),
+                qtyIn: Number(dataRow[7]) || 0,
+                qtyOut: Number(dataRow[8]) || 0,
+                remarks: String(dataRow[10] || "").trim(),
+              });
+            });
+          });
+
+          if (typeInput) typeInput.value = previousType;
+
+          if (!activeTableId && registries.length) {
+            showTable(registries[0].id);
+          } else {
+            renderTabs();
+            renderTableCards();
+            showTable(activeTableId);
+          }
+
+          var message = totalRows + " record(s) imported successfully!";
+          if (createdStoreNames.length) {
+            message += " " + createdStoreNames.length + " new store" + (createdStoreNames.length > 1 ? "s" : "") + " created (" + createdStoreNames.join(", ") + ").";
+          }
+          showToast(message);
+        } catch (error) {
+          alert("Import failed: " + error.message);
+        } finally {
+          event.target.value = "";
+        }
+      }
+
+      document.getElementById("payStoreImportInput").addEventListener("change", importPayStoreBackup);
+
+      /* ============================================================
+   TABLE OPERATIONS
+   ============================================================ */
+      function updateTableScroll(tableId) {
+        var tbody = document.querySelector("#recordTable_" + tableId + " tbody");
+        if (!tbody) return;
+        var wrapper = tbody.closest(".table-wrapper");
+        var rows = Array.from(tbody.querySelectorAll("tr"));
+
+        if (rows.length > 10) {
+          var thead = tbody.closest("table").querySelector("thead");
+          var theadHeight = thead.offsetHeight;
+          var tenRowsHeight = 0;
+          for (var i = 0; i < 10; i++) {
+            tenRowsHeight += rows[i].offsetHeight;
+          }
+          wrapper.style.maxHeight = theadHeight + tenRowsHeight + "px";
+          wrapper.style.overflowY = "auto";
+        } else {
+          wrapper.style.maxHeight = "none";
+          wrapper.style.overflowY = "visible";
+        }
+      }
+
+      function sortTable(tableId) {
+        if (!tableId) return;
+        var tbody = document.querySelector("#recordTable_" + tableId + " tbody");
+        if (!tbody) return;
+
+        sortOrders[tableId] = sortOrders[tableId] === "asc" ? "desc" : "asc";
+        var order = sortOrders[tableId];
+
+        resortTableByDate(tableId);
+
+        var icon = document.getElementById("sortIcon_" + tableId);
+        if (icon) {
+          icon.textContent = order === "asc" ? "\u2193" : "\u2191";
+          icon.classList.add("active");
+        }
+
+        calculateRunningBalance(tableId);
+        updateTableScroll(tableId);
+        saveTableData(tableId);
+      }
+
+      function getActionButtons(tableId, serial) {
+        return (
+          '<div style="display:flex; justify-content:center; gap:2px;">' +
+          '<button class="action-btn edit-btn" title="Edit" onclick="editRow(this, \'' +
+          tableId +
+          "', " +
+          serial +
+          ')">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+          "</button>" +
+          '<button class="action-btn delete-btn" title="Delete" onclick="deleteRow(this, \'' +
+          tableId +
+          "')\">" +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>' +
+          "</button>" +
+          "</div>"
+        );
+      }
+
+      function addRowFromModal(tableId, data) {
+        var table = document.querySelector("#recordTable_" + tableId + " tbody");
+        if (!table) return;
+        var row = table.insertRow();
+        var id = nextIds[tableId]++;
+        row.dataset.id = id;
+
+        var type = document.getElementById("modalTransactionType").value;
+        var qtyInHighlight = type === "receive" ? "qty-highlight" : "";
+        var qtyOutHighlight = type === "issue" ? "qty-highlight" : "";
+
+        /* SRL cell â€” renumberSrl will fill it */
+        row.innerHTML =
+          '<td class="srl-cell" style="font-weight:600; color:var(--text-dim);"></td>' +
+          '<td><input type="text" value="' +
+          toDisplayDate(data.date) +
+          '" readonly></td>' +
+          '<td><input type="text" class="auto-cap" value="' +
+          escHtml(data.svcNo) +
+          '"></td>' +
+          '<td><input type="text" class="auto-cap" value="' +
+          escHtml(data.rank) +
+          '"></td>' +
+          '<td><input type="text" class="auto-cap" value="' +
+          escHtml(data.name) +
+          '"></td>' +
+          '<td><span class="dept-text">' +
+          escHtml(data.dept) +
+          "</span></td>" +
+          '<td><input type="text" value="EACH" readonly style="color:var(--text-dim)"></td>' +
+          '<td><input type="number" class="quantity-in ' +
+          qtyInHighlight +
+          '" value="' +
+          data.qtyIn +
+          '" placeholder="0" min="0" disabled></td>' +
+          '<td><input type="number" class="quantity-out ' +
+          qtyOutHighlight +
+          '" value="' +
+          data.qtyOut +
+          '" placeholder="0" min="0" disabled></td>' +
+          '<td><input type="text" class="balance" readonly></td>' +
+          '<td><span class="rcvd-text auto-cap">' +
+          escHtml(data.remarks) +
+          "</span></td>" +
+          '<td class="user-id-column"><span class="updated-by-auto">' +
+          escHtml(currentUser) +
+          "</span></td>" +
+          '<td class="action-column">' +
+          getActionButtons(tableId, id) +
+          "</td>";
+
+        /* Re-arrange all rows in date order (new row included) so the
+           table always reads chronologically, regardless of when the
+           entry was actually added. */
+        resortTableByDate(tableId);
+        calculateRunningBalance(tableId);
+        updateTableScroll(tableId);
+        saveTableData(tableId);
+        recordPayStoreActivity(type === "receive" ? "Received pay-store stock" : "Issued pay-store stock", tableId, data);
+      }
+
+      function updateRowFromModal(tableId, serial, data) {
+        var rows = document.querySelectorAll("#recordTable_" + tableId + " tbody tr");
+        var targetRow = null;
+        rows.forEach(function (r) {
+          if (r.dataset.id == serial) targetRow = r;
+        });
+
+        if (targetRow) {
+          targetRow.cells[1].querySelector("input").value = toDisplayDate(data.date);
+          targetRow.cells[2].querySelector("input").value = data.svcNo;
+          targetRow.cells[3].querySelector("input").value = data.rank;
+          targetRow.cells[4].querySelector("input").value = data.name;
+
+          targetRow.cells[5].querySelector(".dept-text").innerText = data.dept;
+
+          targetRow.cells[7].querySelector("input").value = data.qtyIn;
+          targetRow.cells[8].querySelector("input").value = data.qtyOut;
+
+          targetRow.cells[10].querySelector(".rcvd-text").innerText = data.remarks;
+
+          targetRow.cells[11].querySelector(".updated-by-auto").innerText = currentUser;
+          resortTableByDate(tableId);
+          calculateRunningBalance(tableId);
+          saveTableData(tableId);
+          recordPayStoreActivity("Updated pay-store record", tableId, data);
+        }
+      }
+
+      function editRow(btn, tableId, serial) {
+        var row = btn.closest("tr");
+        var rawDate = row.cells[1].querySelector("input").value;
+        var editData = {
+          serial: serial,
+          date: toIsoDate(rawDate),
+          svcNo: row.cells[2].querySelector("input").value,
+          rank: row.cells[3].querySelector("input").value,
+          name: row.cells[4].querySelector("input").value,
+          dept: row.cells[5].innerText.trim(),
+          qtyIn: row.cells[7].querySelector("input").value,
+          qtyOut: row.cells[8].querySelector("input").value,
+          remarks: row.cells[10].innerText.trim(),
+        };
+        openModal(tableId, "edit", editData);
+      }
+
+      function deleteRow(btn, tableId) {
+        if (!confirm("Delete this row?")) return;
+        var row = btn.closest("tr");
+        var deletedData = {
+          serial: row.dataset.id,
+          svcNo: row.cells[2].querySelector("input").value,
+          name: row.cells[4].querySelector("input").value,
+          qtyIn: row.cells[7].querySelector("input").value,
+          qtyOut: row.cells[8].querySelector("input").value,
+          remarks: row.cells[10].innerText.trim(),
+        };
+        row.remove();
+        renumberSrl(tableId);
+        calculateRunningBalance(tableId);
+        updateTableScroll(tableId);
+        saveTableData(tableId);
+        recordPayStoreActivity("Deleted pay-store record", tableId, deletedData);
+      }
+
+      /* ============================================================
+   BALANCE CALCULATION â€” two-pass: calculate then hide dupes
+   ============================================================ */
+      function calculateRunningBalance(tableId) {
+        var rows = Array.from(document.querySelectorAll("#recordTable_" + tableId + " tbody tr"));
+
+        /* Pass 1: Calculate balances in chronological (date) order */
+        var sortedRows = rows.slice().sort(compareRowsByDate);
+        var runningBalance = 0;
+        sortedRows.forEach(function (row) {
+          var qtyIn = safeNum(row.querySelector(".quantity-in").value);
+          var qtyOut = safeNum(row.querySelector(".quantity-out").value);
+          var balanceInput = row.querySelector(".balance");
+          var balance = runningBalance + qtyIn - qtyOut;
+          balanceInput.value = balance;
+          runningBalance = balance;
+        });
+
+        /* Pass 2: Style in visual DOM order; hide consecutive duplicate balances */
+        var prevVisualBalance = null;
+        rows.forEach(function (row) {
+          var balanceInput = row.querySelector(".balance");
+          var balance = safeNum(balanceInput.value);
+
+          if (prevVisualBalance !== null && balance === prevVisualBalance) {
+            balanceInput.className = "balance balance-hidden";
+          } else if (balance === 0) {
+            balanceInput.className = "balance balance-zero";
+          } else if (balance < 0) {
+            balanceInput.className = "balance balance-negative";
+          } else {
+            balanceInput.className = "balance balance-positive";
+          }
+
+          prevVisualBalance = balance;
+        });
+      }
+
+      /* ============================================================
+   MODALS
+   ============================================================ */
+      function openModal(target, type, editData) {
+        var modal = document.getElementById("transactionModal");
+        var titleText = document.getElementById("modalTitleText");
+        var deptSelect = document.getElementById("modalDept");
+        var qtyInInput = document.getElementById("modalQtyIn");
+        var qtyOutInput = document.getElementById("modalQtyOut");
+        var rcvdGroup = document.getElementById("rcvdGroup");
+
+        document.getElementById("modalSvcNo").value = "";
+        document.getElementById("modalRank").value = "";
+        document.getElementById("modalName").value = "";
+        document.getElementById("modalRemarks").value = "";
+        document.getElementById("modalQtyIn").value = "";
+        document.getElementById("modalQtyOut").value = "";
+        document.getElementById("editRowSerial").value = "";
+
+        qtyInInput.disabled = false;
+        qtyOutInput.disabled = false;
+        qtyInInput.style.backgroundColor = "";
+        qtyOutInput.style.backgroundColor = "";
+        qtyInInput.title = "";
+        qtyOutInput.title = "";
+
+        document.getElementById("modalTableId").value = target;
+        document.getElementById("modalTransactionType").value = type;
+
+        hideAcList(document.getElementById("deptAutoList"));
+        acDeptIndex = -1;
+
+        var deptGroup = document.getElementById("deptGroup");
+
+        if (editData) {
+          titleText.textContent = "Edit Entry";
+          document.getElementById("editRowSerial").value = editData.serial;
+          document.getElementById("modalDate").value = toIsoDate(editData.date);
+          document.getElementById("modalSvcNo").value = capitalizeWords(editData.svcNo);
+          document.getElementById("modalRank").value = capitalizeWords(editData.rank);
+          document.getElementById("modalName").value = capitalizeWords(editData.name);
+          // Determine if this is a receive edit (dept === "STORE") or issue edit
+          var isReceiveEdit = editData.dept === "STORE" || editData.qtyIn > 0;
+          if (isReceiveEdit) {
+            deptGroup.style.display = "none";
+            deptSelect.value = "STORE";
+          } else {
+            deptGroup.style.display = "flex";
+            document.getElementById("modalDept").value = editData.dept;
+          }
+          document.getElementById("modalRemarks").value = capitalizeWords(editData.remarks);
+          document.getElementById("modalQtyIn").value = editData.qtyIn;
+          document.getElementById("modalQtyOut").value = editData.qtyOut;
+          qtyInInput.disabled = true;
+          qtyOutInput.disabled = true;
+          qtyInInput.style.backgroundColor = "#f1f5f9";
+          qtyOutInput.style.backgroundColor = "#f1f5f9";
+          qtyInInput.title = "Quantity cannot be modified in edit mode";
+          qtyOutInput.title = "Quantity cannot be modified in edit mode";
+          document.getElementById("qtyInGroup").style.display = "flex";
+          document.getElementById("qtyOutGroup").style.display = "flex";
+          rcvdGroup.style.display = "flex";
+        } else {
+          document.getElementById("modalDate").value = new Date().toISOString().slice(0, 10);
+          if (type === "receive") {
+            titleText.textContent = "Receive Item (Stock In)";
+            // Hide dept field and default to STORE for receive
+            deptGroup.style.display = "none";
+            deptSelect.value = "STORE";
+            document.getElementById("qtyInGroup").style.display = "flex";
+            document.getElementById("qtyOutGroup").style.display = "none";
+            rcvdGroup.style.display = "flex";
+          } else {
+            titleText.textContent = "Issue Item (Stock Out)";
+            // Show dept field as free text (no default) for issue
+            deptGroup.style.display = "flex";
+            deptSelect.value = "";
+            document.getElementById("qtyInGroup").style.display = "none";
+            document.getElementById("qtyOutGroup").style.display = "flex";
+            rcvdGroup.style.display = "none";
+          }
+        }
+
+        modal.style.display = "flex";
+        modal.classList.add("show");
+      }
+
+      function closeModal(modalId) {
+        var modal = document.getElementById(modalId);
+        if (modal) {
+          modal.classList.remove("show");
+          modal.style.display = "none";
+        }
+      }
+
+      function submitTransaction() {
+        var tableId = document.getElementById("modalTableId").value;
+        var type = document.getElementById("modalTransactionType").value;
+        var editSerial = document.getElementById("editRowSerial").value;
+
+        var data = {
+          date: document.getElementById("modalDate").value,
+          svcNo: capitalizeWords(document.getElementById("modalSvcNo").value) || "-",
+          rank: capitalizeWords(document.getElementById("modalRank").value) || "-",
+          name: capitalizeWords(document.getElementById("modalName").value) || "-",
+          dept: document.getElementById("modalDept").value,
+          remarks: capitalizeWords(document.getElementById("modalRemarks").value) || "-",
+          qtyIn: parseFloat(document.getElementById("modalQtyIn").value) || 0,
+          qtyOut: parseFloat(document.getElementById("modalQtyOut").value) || 0,
+        };
+
+        if (!data.date) return alert("Please select a date.");
+        if (editSerial === "") {
+          if (type === "receive" && data.qtyIn <= 0) return alert("Please enter a valid Quantity In.");
+          if (type === "issue" && data.qtyOut <= 0) return alert("Please enter a valid Quantity Out.");
+        } else {
+          if (data.qtyIn < 0 || data.qtyOut < 0) return alert("Quantities cannot be negative.");
+        }
+
+        if (type === "issue") rememberDepartment(data.dept);
+
+        if (editSerial !== "") {
+          updateRowFromModal(tableId, editSerial, data);
+          showToast("Entry updated successfully!");
+        } else {
+          addRowFromModal(tableId, data);
+          showToast((type === "receive" ? "Received" : "Issued") + " successfully!");
+        }
+
+        closeModal("transactionModal");
+      }
+
+      /* ============================================================
+   DATA PERSISTENCE â€” loadTableData
+   ============================================================ */
+      async function loadTableData(tableId) {
+        var parsed = await dbLoadTable(tableId);
+        var savedData = [];
+        var savedSort = "asc";
+        var savedNextId = 1;
+
+        if (Array.isArray(parsed)) {
+          savedData = parsed;
+        } else if (parsed && Array.isArray(parsed.data)) {
+          savedData = parsed.data;
+          savedNextId = parsed.nextId || 1;
+          savedSort = parsed.sortOrder || "asc";
+        }
+
+        nextIds[tableId] = savedNextId;
+        sortOrders[tableId] = savedSort;
+
+        var icon = document.getElementById("sortIcon_" + tableId);
+        if (icon) {
+          icon.textContent = savedSort === "asc" ? "\u2193" : "\u2191";
+          if (savedSort !== "asc") icon.classList.add("active");
+        }
+
+        if (savedData.length) {
+          var table = document.querySelector("#recordTable_" + tableId + " tbody");
+          if (!table) return;
+
+          savedData.forEach(function (rowData) {
+            var row = table.insertRow();
+            var id = parseInt(rowData[0]) || nextIds[tableId]++;
+            row.dataset.id = id;
+
+            var displayDate = toDisplayDate(toIsoDate(rowData[1]));
+            var cSvc = capitalizeWords(rowData[2] || "-");
+            var cRank = capitalizeWords(rowData[3] || "-");
+            var cName = capitalizeWords(rowData[4] || "-");
+            var cRcvd = capitalizeWords(rowData[10] || "-");
+
+            row.innerHTML =
+              '<td class="srl-cell" style="font-weight:600; color:var(--text-dim);"></td>' +
+              '<td><input type="text" value="' +
+              displayDate +
+              '" readonly></td>' +
+              '<td><input type="text" class="auto-cap" value="' +
+              escHtml(cSvc) +
+              '"></td>' +
+              '<td><input type="text" class="auto-cap" value="' +
+              escHtml(cRank) +
+              '"></td>' +
+              '<td><input type="text" class="auto-cap" value="' +
+              escHtml(cName) +
+              '"></td>' +
+              '<td><span class="dept-text">' +
+              escHtml(rowData[5] || "N/A") +
+              "</span></td>" +
+              '<td><input type="text" value="EACH" readonly style="color:var(--text-dim)"></td>' +
+              '<td><input type="number" class="quantity-in" value="' +
+              (rowData[7] || 0) +
+              '" placeholder="0" min="0" disabled></td>' +
+              '<td><input type="number" class="quantity-out" value="' +
+              (rowData[8] || 0) +
+              '" placeholder="0" min="0" disabled></td>' +
+              '<td><input type="text" class="balance" readonly></td>' +
+              '<td><span class="rcvd-text auto-cap">' +
+              escHtml(cRcvd) +
+              "</span></td>" +
+              '<td class="user-id-column"><span class="updated-by-auto">' +
+              escHtml(rowData[11] || currentUser) +
+              "</span></td>" +
+              '<td class="action-column">' +
+              getActionButtons(tableId, id) +
+              "</td>";
+          });
+
+          /* Arrange rows in date order (renumberSrl runs inside) */
+          resortTableByDate(tableId);
+          calculateRunningBalance(tableId);
+        }
+      }
+
+      function exportToCSV(tableId) {
+        var parsed = dbLoadTable(tableId);
+        var savedData = parsed ? (Array.isArray(parsed) ? parsed : parsed.data) || [] : [];
+
+        if (!savedData.length) return alert("No data to export!");
+
+        var headers = [
+          "SRL",
+          "DATE",
+          "SVC NO.",
+          "RANK",
+          "NAME",
+          "DEPT.",
+          "D OF Q",
+          "QTY IN",
+          "QTY OUT",
+          "BAL",
+          "RCVD From",
+        ];
+        var csvContent = [
+          headers.join(","),
+          savedData
+            .map(function (row, idx) {
+              var dateVal = row[1] || "";
+              dateVal = toDisplayDate(toIsoDate(dateVal));
+              dateVal = "\t" + dateVal;
+              /* Use sequential SRL based on position */
+              var filteredRow = [
+                idx + 1,
+                dateVal,
+                row[2],
+                row[3],
+                row[4],
+                row[5],
+                row[6],
+                row[7],
+                row[8],
+                row[9],
+                row[10],
+              ];
+              return filteredRow
+                .map(function (cell) {
+                  return '"' + cell + '"';
+                })
+                .join(",");
+            })
+            .join("\n"),
+        ].join("\n");
+
+        var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        var link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = tableId + "_pay_printing_stores.csv";
+        link.click();
+      }
+
+      /* ============================================================
+   EVENT HANDLERS
+   ============================================================ */
+      document.addEventListener(
+        "blur",
+        function (e) {
+          if (e.target.classList.contains("auto-cap") || (e.target.tagName === "INPUT" && e.target.type === "text")) {
+            if (e.target.tagName === "INPUT") {
+              var oldVal = e.target.value;
+              var newVal = capitalizeWords(e.target.value);
+              e.target.value = newVal;
+              if (oldVal !== newVal) {
+                var row = e.target.closest("tr");
+                if (row) {
+                  var table = e.target.closest("table");
+                  if (table) {
+                    var tableId = table.id.replace("recordTable_", "");
+                    saveTableData(tableId);
+                  }
+                }
+              }
+            }
+          }
+        },
+        true,
+      );
+
+      document.addEventListener("input", function (e) {
+        var row = e.target.closest("tr");
+        if (!row) return;
+        var table = e.target.closest("table");
+        if (table) {
+          var tableId = table.id.replace("recordTable_", "");
+          if (e.target.classList.contains("quantity-in") || e.target.classList.contains("quantity-out")) {
+            calculateRunningBalance(tableId);
+          }
+          if (!e.target.classList.contains("balance") && !e.target.classList.contains("updated-by-auto")) {
+            var updatedByEl = row.querySelector(".updated-by-auto");
+            if (updatedByEl) {
+              updatedByEl.innerText = currentUser;
+              updatedByEl.style.transform = "scale(1.05)";
+              setTimeout(function () {
+                updatedByEl.style.transform = "scale(1)";
+              }, 150);
+            }
+          }
+          debouncedSave(tableId);
+        }
+      });
+
+      document.addEventListener("click", function (e) {
+        var ctxMenu = document.getElementById("tabContextMenu");
+        if (ctxMenu.classList.contains("show") && !ctxMenu.contains(e.target)) {
+          hideTabMenu();
+        }
+
+        var printDropdown = document.getElementById("printDropdown");
+        if (
+          printDropdown &&
+          printDropdownOpen &&
+          !printDropdown.contains(e.target) &&
+          !e.target.closest(".print-btn")
+        ) {
+          closePrintDropdown();
+        }
+
+        var exportDropdown = document.getElementById("exportDropdown");
+        if (
+          exportDropdown &&
+          exportDropdownOpen &&
+          !exportDropdown.contains(e.target) &&
+          !e.target.closest(".print-btn")
+        ) {
+          closeExportDropdown();
+        }
+
+        /* Close autocomplete lists when clicking outside */
+        var svcInput  = document.getElementById("modalSvcNo");
+        var nameInput = document.getElementById("modalName");
+        var deptInputEl = document.getElementById("modalDept");
+        var svcList   = document.getElementById("svcAutoList");
+        var nameList  = document.getElementById("nameAutoList");
+        var deptListEl = document.getElementById("deptAutoList");
+        if (svcList  && !e.target.closest("#svcAutoList")  && e.target !== svcInput)  hideAcList(svcList);
+        if (nameList && !e.target.closest("#nameAutoList") && e.target !== nameInput) hideAcList(nameList);
+        if (deptListEl && !e.target.closest("#deptAutoList") && e.target !== deptInputEl) hideAcList(deptListEl);
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        var colorInput = document.getElementById("registryColorInput");
+        var colorHex = document.getElementById("registryColorHex");
+        colorInput.addEventListener("input", function () {
+          colorHex.textContent = this.value;
+        });
+      });
+
+      function toggleNavDropdown(e) {
+        e.stopPropagation();
+        document.getElementById("navDropdownWrap").classList.toggle("open");
+      }
+      document.addEventListener("click", function (e) {
+        var wrap = document.getElementById("navDropdownWrap");
+        if (wrap && wrap.classList.contains("open") && !wrap.contains(e.target)) {
+          wrap.classList.remove("open");
+        }
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          var wrap = document.getElementById("navDropdownWrap");
+          if (wrap) wrap.classList.remove("open");
+        }
+      });
+
+      function handleLogout(e) {
+        e.preventDefault();
+        saveAllTableData();
+        saveRegistriesToStorage();
+        memoryStore.currentUser = null;
+        try { sessionStorage.clear(); } catch (error) {}
+        window.location.href = "index.html";
+        return false;
+      }
+
+      /* ============================================================
+   INITIALIZATION
+   ============================================================ */
+      function initializeUser() {
+        var storedUser = dbLoadCurrentUser();
+        if (!storedUser) {
+          try {
+            var loggedInUser = JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
+            storedUser = loggedInUser && (loggedInUser.username || loggedInUser.fullName || loggedInUser.email);
+          } catch (error) {}
+        }
+        currentUser = storedUser || sessionStorage.getItem("username") || "Guest";
+        document.getElementById("displayUserName").textContent = currentUser;
+        var loginUser = null;
+        try {
+          loginUser = JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
+        } catch (error) {}
+        if (loginUser && (loginUser.role === "Admin" || loginUser.role === "Administrator") && sessionStorage.getItem("isAdminSession") === "true") {
+          document.getElementById("adminPanelNavItem").style.display = "flex";
+        }
+      }
+
+      async function init() {
+        initializeUser();
+        loadDeptHistory();
+        await loadRegistries();
+
+        registries.forEach(function (reg) {
+          if (!nextIds[reg.id]) nextIds[reg.id] = 1;
+          if (!sortOrders[reg.id]) sortOrders[reg.id] = "asc";
+        });
+
+        if (registries.length > 0) {
+          activeTableId = registries[0].id;
+        } else {
+          activeTableId = null;
+        }
+
+        renderTabs();
+        renderTableCards();
+        await Promise.all(registries.map(function (reg) {
+          return dbHydrateTable(reg.id);
+        }));
+
+        await Promise.all(registries.map(function (reg) {
+          return loadTableData(reg.id);
+        }));
+
+        showTable(activeTableId);
+      }
+
+      document.addEventListener("DOMContentLoaded", init);
+
+      /* ============================================================
+         AUTOCOMPLETE â€” SVC NO. (military) & Name (civilian)
+         Both auto-fill: SVC NO., Rank, Name, Dept
+         ============================================================ */
+
+      var acSvcIndex  = -1;
+      var acNameIndex = -1;
+      var acDeptIndex = -1;
+
+      /* ============================================================
+         DEPARTMENT AUTOSUGGEST â€” remembers the first word of every
+         department typed in the Issue modal and suggests full past
+         entries that share it, so frequently-issued-to departments
+         come up again after just a letter or two.
+         ============================================================ */
+      var DEPT_HISTORY_KEY = "payStore.deptHistory";
+      var deptHistory = [];
+
+      function loadDeptHistory() {
+        try {
+          var raw = memoryStore.getItem(DEPT_HISTORY_KEY);
+          deptHistory = raw ? JSON.parse(raw) : [];
+          if (!Array.isArray(deptHistory)) deptHistory = [];
+        } catch (e) {
+          deptHistory = [];
+        }
+      }
+
+      function rememberDepartment(deptValue) {
+        var trimmed = (deptValue || "").trim();
+        if (!trimmed || trimmed.toUpperCase() === "STORE") return;
+        var normalized = trimmed.toUpperCase();
+        deptHistory = deptHistory.filter(function (d) {
+          return d.toUpperCase() !== normalized;
+        });
+        deptHistory.unshift(trimmed);
+        deptHistory = deptHistory.slice(0, 50);
+        memoryStore.setItem(DEPT_HISTORY_KEY, JSON.stringify(deptHistory));
+      }
+
+      function firstWord(str) {
+        var trimmed = (str || "").trim();
+        if (!trimmed) return "";
+        return trimmed.split(/\s+/)[0];
+      }
+
+      /* Collect unique person records from the table store + live DOM */
+      function getAllPersonRecords() {
+        var map = {}; /* key = "SVCNO||NAME" â†’ record */
+        function addRecord(svc, rank, name, dept) {
+          svc  = (svc  || "").trim();
+          rank = (rank || "").trim();
+          name = (name || "").trim();
+          dept = (dept || "").trim();
+          if (!name || name === "-") return;
+          var key = svc.toUpperCase() + "||" + name.toUpperCase();
+          if (!map[key]) {
+            map[key] = {
+              svcNo: capitalizeWords(svc),
+              rank:  capitalizeWords(rank),
+              name:  capitalizeWords(name),
+              dept:  dept
+            };
+          }
+        }
+        /* From the (in-memory / future database) table store */
+        registries.forEach(function (reg) {
+          var parsed = dbLoadTable(reg.id);
+          var rows = parsed ? (Array.isArray(parsed) ? parsed : (parsed.data || [])) : [];
+          rows.forEach(function (r) { addRecord(r[2], r[3], r[4], r[5]); });
+        });
+        /* From live DOM rows */
+        registries.forEach(function (reg) {
+          document.querySelectorAll("#recordTable_" + reg.id + " tbody tr").forEach(function (row) {
+            var svc  = row.cells[2] && row.cells[2].querySelector("input")      ? row.cells[2].querySelector("input").value : "";
+            var rank = row.cells[3] && row.cells[3].querySelector("input")      ? row.cells[3].querySelector("input").value : "";
+            var name = row.cells[4] && row.cells[4].querySelector("input")      ? row.cells[4].querySelector("input").value : "";
+            var dept = row.cells[5] && row.cells[5].querySelector(".dept-text") ? row.cells[5].querySelector(".dept-text").innerText : "";
+            addRecord(svc, rank, name, dept);
+          });
+        });
+        return Object.values(map);
+      }
+
+      function hlMatch(text, query) {
+        if (!query || !text) return escHtml(text || "");
+        var i = text.toUpperCase().indexOf(query.toUpperCase());
+        if (i === -1) return escHtml(text);
+        return escHtml(text.slice(0, i)) +
+               '<span class="ac-match">' + escHtml(text.slice(i, i + query.length)) + '</span>' +
+               escHtml(text.slice(i + query.length));
+      }
+
+      function renderAcList(listEl, items, primaryFn, secondaryFn, onSelect) {
+        listEl.innerHTML = "";
+        if (!items.length) { listEl.classList.remove("show"); return; }
+        items.forEach(function (p, i) {
+          var el = document.createElement("div");
+          el.className = "autocomplete-item";
+          el.dataset.idx = i;
+          el.innerHTML = '<span class="ac-primary">'   + primaryFn(p)   + '</span>' +
+                         '<span class="ac-secondary">' + secondaryFn(p) + '</span>';
+          el.addEventListener("mousedown", function (e) { e.preventDefault(); onSelect(p); });
+          listEl.appendChild(el);
+        });
+        listEl.__items = items;
+        listEl.classList.add("show");
+      }
+
+      function moveAcActive(listEl, indexRef, delta) {
+        var items = listEl.querySelectorAll(".autocomplete-item");
+        if (!items.length) return indexRef;
+        var next = Math.max(-1, Math.min(items.length - 1, indexRef + delta));
+        items.forEach(function (el, i) {
+          el.classList.toggle("ac-active", i === next);
+          if (i === next) el.scrollIntoView({ block: "nearest" });
+        });
+        return next;
+      }
+
+      function hideAcList(listEl) {
+        if (listEl) { listEl.classList.remove("show"); listEl.innerHTML = ""; }
+      }
+
+      function applyPerson(person) {
+        document.getElementById("modalSvcNo").value = person.svcNo;
+        document.getElementById("modalRank").value  = person.rank;
+        document.getElementById("modalName").value  = person.name;
+        /* Fill dept only in issue mode */
+        var deptGroup = document.getElementById("deptGroup");
+        if (deptGroup && deptGroup.style.display !== "none" && person.dept && person.dept !== "STORE") {
+          document.getElementById("modalDept").value = person.dept;
+        }
+        hideAcList(document.getElementById("svcAutoList"));
+        hideAcList(document.getElementById("nameAutoList"));
+        hideAcList(document.getElementById("deptAutoList"));
+        acSvcIndex = acNameIndex = acDeptIndex = -1;
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        var svcInput  = document.getElementById("modalSvcNo");
+        var nameInput = document.getElementById("modalName");
+        var svcList   = document.getElementById("svcAutoList");
+        var nameList  = document.getElementById("nameAutoList");
+
+        /* â”€â”€ SVC NO. autocomplete â”€â”€ */
+        svcInput.addEventListener("input", function () {
+          var q = this.value.trim();
+          if (!q) { hideAcList(svcList); return; }
+          var matches = getAllPersonRecords().filter(function (p) {
+            return p.svcNo && p.svcNo.toUpperCase().indexOf(q.toUpperCase()) !== -1;
+          }).slice(0, 8);
+          acSvcIndex = -1;
+          renderAcList(
+            svcList, matches,
+            function (p) { return hlMatch(p.svcNo, q) || "(no SVC)"; },
+            function (p) { return escHtml(p.rank ? p.rank + " - " : "") + escHtml(p.name); },
+            function (p) { applyPerson(p); svcInput.focus(); }
+          );
+        });
+
+        svcInput.addEventListener("keydown", function (e) {
+          if (!svcList.classList.contains("show")) return;
+          if (e.key === "ArrowDown")  { e.preventDefault(); acSvcIndex = moveAcActive(svcList, acSvcIndex,  1); }
+          else if (e.key === "ArrowUp")   { e.preventDefault(); acSvcIndex = moveAcActive(svcList, acSvcIndex, -1); }
+          else if ((e.key === "Enter" || e.key === "Tab") && acSvcIndex >= 0 && svcList.__items) {
+            e.preventDefault(); applyPerson(svcList.__items[acSvcIndex]); svcInput.focus();
+          } else if (e.key === "Escape") { hideAcList(svcList); acSvcIndex = -1; }
+        });
+
+        svcInput.addEventListener("blur", function () { setTimeout(function () { hideAcList(svcList); }, 160); });
+
+        /* â”€â”€ Name autocomplete â”€â”€ */
+        nameInput.addEventListener("input", function () {
+          var q = this.value.trim();
+          if (!q) { hideAcList(nameList); return; }
+          var matches = getAllPersonRecords().filter(function (p) {
+            return p.name && p.name.toUpperCase().indexOf(q.toUpperCase()) !== -1;
+          }).slice(0, 8);
+          acNameIndex = -1;
+          renderAcList(
+            nameList, matches,
+            function (p) { return hlMatch(p.name, q); },
+            function (p) {
+              var parts = [];
+              if (p.svcNo) parts.push(p.svcNo);
+              if (p.rank)  parts.push(p.rank);
+              return escHtml(parts.join(" - ")) || "Civilian";
+            },
+            function (p) { applyPerson(p); nameInput.focus(); }
+          );
+        });
+
+        nameInput.addEventListener("keydown", function (e) {
+          if (!nameList.classList.contains("show")) return;
+          if (e.key === "ArrowDown")  { e.preventDefault(); acNameIndex = moveAcActive(nameList, acNameIndex,  1); }
+          else if (e.key === "ArrowUp")   { e.preventDefault(); acNameIndex = moveAcActive(nameList, acNameIndex, -1); }
+          else if ((e.key === "Enter" || e.key === "Tab") && acNameIndex >= 0 && nameList.__items) {
+            e.preventDefault(); applyPerson(nameList.__items[acNameIndex]); nameInput.focus();
+          } else if (e.key === "Escape") { hideAcList(nameList); acNameIndex = -1; }
+        });
+
+        nameInput.addEventListener("blur", function () { setTimeout(function () { hideAcList(nameList); }, 160); });
+
+        /* â”€â”€ Department autosuggest (Issue modal only) â”€â”€ */
+        var deptInput = document.getElementById("modalDept");
+        var deptList  = document.getElementById("deptAutoList");
+
+        deptInput.addEventListener("input", function () {
+          var q = this.value.trim();
+          if (!q) { hideAcList(deptList); return; }
+          var qWord = firstWord(q).toUpperCase();
+          var matches = deptHistory.filter(function (d) {
+            return firstWord(d).toUpperCase().indexOf(qWord) === 0 || d.toUpperCase().indexOf(q.toUpperCase()) !== -1;
+          }).slice(0, 8);
+          acDeptIndex = -1;
+          renderAcList(
+            deptList, matches,
+            function (d) { return hlMatch(d, q); },
+            function () { return ""; },
+            function (d) { deptInput.value = d; hideAcList(deptList); acDeptIndex = -1; deptInput.focus(); }
+          );
+        });
+
+        deptInput.addEventListener("keydown", function (e) {
+          if (!deptList.classList.contains("show")) return;
+          if (e.key === "ArrowDown")  { e.preventDefault(); acDeptIndex = moveAcActive(deptList, acDeptIndex,  1); }
+          else if (e.key === "ArrowUp")   { e.preventDefault(); acDeptIndex = moveAcActive(deptList, acDeptIndex, -1); }
+          else if ((e.key === "Enter" || e.key === "Tab") && acDeptIndex >= 0 && deptList.__items) {
+            e.preventDefault(); deptInput.value = deptList.__items[acDeptIndex]; hideAcList(deptList); deptInput.focus();
+          } else if (e.key === "Escape") { hideAcList(deptList); acDeptIndex = -1; }
+        });
+
+        deptInput.addEventListener("blur", function () { setTimeout(function () { hideAcList(deptList); }, 160); });
+      });
+
+    </script>
+    <script src="message-admin.js"></script>
+    <script src="module-background.js"></script>
+  </body>
+</html>

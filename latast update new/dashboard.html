@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DIT Inventory System</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=DM+Sans:wght@300;400;500;600&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <style>
+      :root {
+        /* Light Theme (Default) */
+        --bg: #f4f6fa;
+        --bg-secondary: #ffffff;
+        --card: #ffffff;
+        --card-hover: #ffffff;
+        --fg: #1a1f36;
+        --muted: #6b7394;
+        --accent: #00b87a;
+        --accent-dim: rgba(0, 184, 122, 0.08);
+        --accent-glow: rgba(0, 184, 122, 0.18);
+        --danger: #e8365d;
+        --border: rgba(0, 0, 0, 0.07);
+        --border-hover: rgba(0, 184, 122, 0.35);
+        --header-height: 72px;
+        --radius: 16px;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+        --shadow-lg: 0 12px 40px rgba(0,0,0,0.08);
+        
+        /* Element backgrounds for easy dark mode mapping */
+        --header-bg: rgba(255, 255, 255, 0.82);
+        --glass-bg: rgba(0, 0, 0, 0.03);
+        --glass-border: rgba(0, 0, 0, 0.07);
+        --modal-bg: rgba(0, 0, 0, 0.25);
+        --modal-box-bg: #ffffff;
+        --toast-bg: #ffffff;
+        --mouse-glow-color: rgba(0, 184, 122, 0.05);
+        --btn-cancel-bg: rgba(0, 0, 0, 0.05);
+        --btn-cancel-hover-bg: rgba(0, 0, 0, 0.08);
+        --grid-pattern-color: rgba(0, 0, 0, 0.02);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        min-height: 100vh;
+        overflow-x: hidden;
+        transition: background 0.4s ease, color 0.4s ease;
+      }
+
+      /* ================= ANIMATED BACKGROUND ================= */
+      .bg-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .bg-layer .orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(120px);
+        opacity: 0.18;
+        animation: orbFloat 20s ease-in-out infinite;
+      }
+
+      .bg-layer .orb:nth-child(1) {
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, #00e09e 0%, transparent 70%);
+        top: -10%;
+        left: -5%;
+        animation-delay: 0s;
+      }
+
+      .bg-layer .orb:nth-child(2) {
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
+        bottom: -15%;
+        right: -5%;
+        animation-delay: -7s;
+      }
+
+      .bg-layer .orb:nth-child(3) {
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, #f59e0b 0%, transparent 70%);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation-delay: -14s;
+        opacity: 0.1;
+      }
+
+      @keyframes orbFloat {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        25% { transform: translate(60px, -40px) scale(1.1); }
+        50% { transform: translate(-30px, 50px) scale(0.95); }
+        75% { transform: translate(40px, 30px) scale(1.05); }
+      }
+
+      .grid-pattern {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(var(--grid-pattern-color) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-pattern-color) 1px, transparent 1px);
+        background-size: 60px 60px;
+      }
+
+      /* ================= HEADER ================= */
+      .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: var(--header-height);
+        background: var(--header-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 32px;
+        z-index: 1000;
+        transition: background 0.4s ease, border-color 0.4s ease;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-logo {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--accent), #009966);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #fff;
+        box-shadow: 0 2px 12px var(--accent-glow);
+      }
+
+      .brand-text {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--fg);
+        letter-spacing: -0.02em;
+      }
+
+      .brand-text span {
+        color: var(--accent);
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .live-clock {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 0.85rem;
+        color: var(--muted);
+        background: var(--glass-bg);
+        padding: 6px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--glass-border);
+      }
+
+      .logout-btn {
+        border: 1px solid rgba(232, 54, 93, 0.25);
+        background: rgba(232, 54, 93, 0.06);
+        color: var(--danger);
+        padding: 9px 20px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 500;
+        font-family: "DM Sans", sans-serif;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .reports-btn {
+        border: 1px solid var(--border);
+        background: var(--glass-bg);
+        color: var(--fg);
+        padding: 9px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 500;
+        font-family: "DM Sans", sans-serif;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .reports-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-dim);
+      }
+
+      .logout-btn:hover {
+        background: var(--danger);
+        color: #fff;
+        border-color: var(--danger);
+        box-shadow: 0 4px 16px rgba(232, 54, 93, 0.25);
+      }
+
+      .logout-btn i {
+        font-size: 0.8rem;
+      }
+
+      /* ================= MAIN ================= */
+      .container {
+        position: relative;
+        z-index: 1;
+        max-width: 1200px;
+        margin: auto;
+        padding: calc(var(--header-height) + 40px) 24px 60px;
+      }
+
+      /* ================= WELCOME SECTION ================= */
+      .welcome-section {
+        margin-bottom: 40px;
+        animation: fadeSlideUp 0.8s ease both;
+      }
+
+      .welcome-section h1 {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 2.8rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1.15;
+        margin-bottom: 10px;
+      }
+
+      .welcome-section h1 .accent-line {
+        color: var(--accent);
+      }
+
+      .welcome-section p {
+        color: var(--muted);
+        font-size: 1.05rem;
+        max-width: 500px;
+      }
+
+      /* ================= DASHBOARD GRID ================= */
+      .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 24px;
+      }
+
+      /* ================= CARDS ================= */
+      .card {
+        position: relative;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 36px 24px 28px;
+        text-decoration: none;
+        color: var(--fg);
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        overflow: hidden;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 50% 0%, var(--accent-dim), transparent 60%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+      }
+
+      .card:hover::before {
+        opacity: 1;
+      }
+
+      .card:hover {
+        transform: translateY(-8px);
+        border-color: var(--border-hover);
+        box-shadow:
+          var(--shadow-lg),
+          0 0 40px var(--accent-dim);
+      }
+
+      .card-icon {
+        position: relative;
+        z-index: 1;
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.7rem;
+        color: var(--accent);
+        margin-bottom: 20px;
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      .card:hover .card-icon {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+        transform: scale(1.1) rotate(-3deg);
+        box-shadow: 0 4px 20px var(--accent-glow);
+      }
+
+      .card h3 {
+        position: relative;
+        z-index: 1;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        letter-spacing: -0.01em;
+      }
+
+      .card p {
+        position: relative;
+        z-index: 1;
+        font-size: 0.9rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .card .card-arrow {
+        position: relative;
+        z-index: 1;
+        margin-top: auto;
+        padding-top: 18px;
+        font-size: 0.82rem;
+        color: var(--accent);
+        opacity: 0;
+        transform: translateY(8px);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+      }
+
+      .card:hover .card-arrow {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .card:nth-child(1) { animation: fadeSlideUp 0.7s ease 0.2s both; }
+      .card:nth-child(2) { animation: fadeSlideUp 0.7s ease 0.3s both; }
+      .card:nth-child(3) { animation: fadeSlideUp 0.7s ease 0.4s both; }
+
+      @keyframes fadeSlideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* ================= FOOTER ================= */
+      .footer {
+        text-align: center;
+        margin-top: 60px;
+        padding: 24px 0;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .footer span {
+        color: var(--accent);
+        font-weight: 500;
+      }
+
+      /* ================= LOGOUT MODAL ================= */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: var(--modal-bg);
+        backdrop-filter: blur(8px);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal-box {
+        background: var(--modal-box-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 36px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+        box-shadow: var(--shadow-lg);
+      }
+
+      .modal-overlay.active .modal-box {
+        transform: scale(1);
+      }
+
+      .modal-box .modal-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: rgba(232, 54, 93, 0.08);
+        border: 1px solid rgba(232, 54, 93, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+        color: var(--danger);
+        font-size: 1.3rem;
+      }
+
+      .modal-box h3 {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.25rem;
+        margin-bottom: 8px;
+        color: var(--fg);
+      }
+
+      .modal-box p {
+        color: var(--muted);
+        font-size: 0.92rem;
+        margin-bottom: 24px;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+
+      .modal-actions button {
+        padding: 10px 24px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-family: "DM Sans", sans-serif;
+        border: none;
+      }
+
+      .btn-cancel {
+        background: var(--btn-cancel-bg);
+        color: var(--fg);
+        border: 1px solid var(--border) !important;
+      }
+
+      .btn-cancel:hover {
+        background: var(--btn-cancel-hover-bg);
+      }
+
+      .btn-confirm-logout {
+        background: var(--danger);
+        color: #fff;
+      }
+
+      .btn-confirm-logout:hover {
+        box-shadow: 0 4px 16px rgba(232, 54, 93, 0.3);
+      }
+
+      .btn-open-reports {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border: 1px solid var(--accent);
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+
+      .btn-open-reports:hover {
+        background: transparent;
+        color: var(--accent);
+        box-shadow: 0 4px 16px var(--accent-glow);
+        transform: translateY(-1px);
+      }
+
+      /* ================= TOAST ================= */
+      .toast-container {
+        position: fixed;
+        top: calc(var(--header-height) + 16px);
+        right: 24px;
+        z-index: 3000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .toast {
+        background: var(--toast-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.9rem;
+        color: var(--fg);
+        box-shadow: var(--shadow-lg);
+        animation: toastIn 0.4s ease both;
+        min-width: 260px;
+      }
+
+      .toast.exit {
+        animation: toastOut 0.3s ease both;
+      }
+
+      .toast i {
+        font-size: 1rem;
+      }
+
+      .toast.success i { color: var(--accent); }
+      .toast.error i { color: var(--danger); }
+
+      @keyframes toastIn {
+        from { opacity: 0; transform: translateX(40px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+
+      @keyframes toastOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(40px); }
+      }
+
+      /* ================= MOUSE GLOW ================= */
+      .mouse-glow {
+        position: fixed;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--mouse-glow-color), transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+        transform: translate(-50%, -50%);
+        transition:
+          left 0.15s ease,
+          top 0.15s ease;
+      }
+
+      /* ================= RESPONSIVE ================= */
+      @media (max-width: 768px) {
+        .header { padding: 0 16px; }
+        .welcome-section h1 { font-size: 1.8rem; }
+        .live-clock { display: none; }
+        .dashboard {
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+        }
+        .card { padding: 28px 18px 22px; }
+      }
+
+      @media (max-width: 480px) {
+        .dashboard { grid-template-columns: 1fr; }
+        .welcome-section h1 { font-size: 1.5rem; }
+        .brand-text { font-size: 1rem; }
+        .logout-btn span { display: none; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="responsive.css" />
+  </head>
+
+  <body>
+    <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
+    <!-- ANIMATED BACKGROUND -->
+    <div class="bg-layer" aria-hidden="true">
+      <div class="orb"></div>
+      <div class="orb"></div>
+      <div class="orb"></div>
+    </div>
+    <div class="grid-pattern" aria-hidden="true"></div>
+    <div class="mouse-glow" id="mouseGlow" aria-hidden="true"></div>
+
+    <!-- HEADER -->
+    <header class="header" role="banner">
+      <div class="brand">
+        <div class="brand-text">
+          Dit
+          <span>Integerated Workplace Management System</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="live-clock" id="liveClock" aria-live="polite"></div>
+        <button class="logout-btn" onclick="showLogoutModal()" aria-label="Logout">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="container">
+      <!-- WELCOME -->
+      <section class="welcome-section">
+        <h1 id="greeting">
+          Welcome back,
+          <span class="accent-line">Admin</span>
+        </h1>
+      </section>
+
+      <!-- MODULE CARDS -->
+      <section class="dashboard" aria-label="Modules">
+        <!-- CLOTHING -->
+        <a href="clothing.html" class="card" role="article">
+          <div class="card-icon">
+            <i class="fa-solid fa-shirt"></i>
+          </div>
+          <h3>Clothing</h3>
+          <p>Manage clothing records, sizes, and issue tracking.</p>
+          <div class="card-arrow">
+            Open module
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </a>
+
+        <!-- JOBS CARD -->
+        <a href="jobscard.html" class="card" role="article">
+          <div class="card-icon">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+          </div>
+          <h3>Jobs Card</h3>
+          <p>Maintainance and Repair records.</p>
+          <div class="card-arrow">
+            Open module
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </a>
+
+        <!-- INVENTORIES -->
+        <a href="inventories.html" class="card" role="article">
+          <div class="card-icon">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <h3>Inventories</h3>
+          <p>Track and manage office equipment.</p>
+          <div class="card-arrow">
+            Open module
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </a>
+
+        <!-- PAY PRINTING -->
+        <a href="pay-stores.html" class="card" role="article">
+          <div class="card-icon">
+            <i class="fa-solid fa-print"></i>
+          </div>
+          <h3>Pay Printing</h3>
+          <p>Manage printing stationeries.</p>
+          <div class="card-arrow">
+            Open module
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </a>
+
+        <!-- PERSONNEL -->
+        <a href="personnel.html" class="card" role="article">
+          <div class="card-icon">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <h3>Personnel</h3>
+          <p>Manage personnel and track movements.</p>
+          <div class="card-arrow">
+            Open module
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </a>
+
+        <!-- REPORTS -->
+        <a href="reports.html" class="card" id="reportsCard" role="article" style="display: none" onclick="return openAdminReports(event)">
+          <div class="card-icon">
+            <i class="fa-solid fa-chart-column"></i>
+          </div>
+          <h3>Reports</h3>
+          <p>Review activity across Clothing, Inventories, and Pay Stores.</p>
+          <div class="card-arrow">
+            Open reports
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </a>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="footer">
+        ©
+        <span id="footerYear"></span>
+      Bentil —
+        <span>v2.5</span>
+        . All rights reserved.
+      </footer>
+    </main>
+
+    <!-- LOGOUT MODAL -->
+    <div class="modal-overlay" id="logoutModal" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
+      <div class="modal-box">
+        <div class="modal-icon">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </div>
+        <h3 id="modalTitle">Confirm Logout</h3>
+        <p>You will be signed out and redirected to the login page.</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="hideLogoutModal()">Cancel</button>
+          <button class="btn-confirm-logout" onclick="confirmLogout()">Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="reportsModal" role="dialog" aria-labelledby="reportsModalTitle" aria-modal="true">
+      <div class="modal-box">
+        <div class="modal-icon">
+          <i class="fa-solid fa-chart-column"></i>
+        </div>
+        <h3 id="reportsModalTitle">Reports</h3>
+        <p>Access the standardized inventory and loan reports.</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="hideReportsModal()">Cancel</button>
+          <a class="btn-open-reports" href="reports.html"><i class="fa-solid fa-chart-line"></i> Open Reports</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <script>
+      /* ================= LIVE CLOCK ================= */
+      function updateClock() {
+        const now = new Date();
+        const opts = { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true };
+        document.getElementById("liveClock").textContent = now.toLocaleTimeString("en-US", opts);
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      /* ================= GREETING ================= */
+      (function setGreeting() {
+        const hour = new Date().getHours();
+        let greet = "Good evening";
+        if (hour < 12) greet = "Good morning";
+        else if (hour < 17) greet = "Good afternoon";
+
+        let username = sessionStorage.getItem("username") || "";
+        try {
+          const loggedInUser = JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
+          username = username || loggedInUser?.username || loggedInUser?.fullName || loggedInUser?.email || "Admin";
+        } catch (error) {}
+        const greeting = document.getElementById("greeting");
+        greeting.firstChild.textContent = `${greet}, `;
+        greeting.querySelector(".accent-line").textContent = username;
+      })();
+
+      function showReportsModal() {
+        let loggedInUser = null;
+        try {
+          loggedInUser = JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
+        } catch (error) {}
+        const isAdminAccount = loggedInUser?.role === "Admin" || loggedInUser?.role === "Administrator";
+        if (isAdminAccount) {
+          document.getElementById("reportsModal").classList.add("active");
+          return true;
+        }
+        showToast("Reports are available to administrators only.", "error");
+        return false;
+      }
+
+      function hideReportsModal() {
+        document.getElementById("reportsModal").classList.remove("active");
+      }
+
+      function showLogoutModal() {
+        document.getElementById("logoutModal").classList.add("active");
+      }
+
+      function hideLogoutModal() {
+        document.getElementById("logoutModal").classList.remove("active");
+      }
+
+      function confirmLogout() {
+        hideLogoutModal();
+        showToast("Logging out...", "success");
+        setTimeout(() => {
+          sessionStorage.clear();
+          window.location.href = "index.html";
+        }, 800);
+      }
+
+      document.getElementById("logoutModal").addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) hideLogoutModal();
+      });
+
+      document.getElementById("reportsModal").addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) hideReportsModal();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          hideLogoutModal();
+          hideReportsModal();
+        }
+      });
+
+      /* ================= TOAST ================= */
+      function showToast(message, type) {
+        const container = document.getElementById("toastContainer");
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+
+        const icon =
+          type === "success" ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-xmark"></i>';
+
+        toast.innerHTML = `${icon}<span>${message}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.classList.add("exit");
+          toast.addEventListener("animationend", () => toast.remove());
+        }, 2500);
+      }
+
+      (function showReportsForAdministrators() {
+        let loggedInUser = null;
+        try {
+          loggedInUser = JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
+        } catch (error) {}
+        const isAdminAccount = loggedInUser?.role === "Admin" || loggedInUser?.role === "Administrator";
+        if (isAdminAccount) {
+          document.getElementById("reportsCard").style.display = "flex";
+        }
+      })();
+    </script>
+    <script src="message-admin.js"></script>
+  </body>
+</html>
