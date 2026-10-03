@@ -10473,8 +10473,78 @@
         document.querySelectorAll(".filter-select").forEach(updateFilterSelectStyle);
         refresh();
       });
+
     </script>
+
     <script src="message-admin.js"></script>
     <script src="module-background.js"></script>
+
+        <!-- Load the Supabase SDK Library -->
+ <script src="https://jsdelivr.net"></script>
+ 
+
+<script>
+  // Initialize the Supabase Client connection
+  const SUPABASE_URL = "https://xpoiysklivftpzmflbdv.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_5O4yT6UZV_aCoHC0U01EZw_15e_hb28";
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Quick verification test log
+  console.log("Supabase connection linked successfully:", supabase);
+
+  // 1. PUSH local additions to Supabase
+async function savePersonnelToDatabase(p) {
+  const { data, error } = await supabase
+    .from('personnel')
+    .insert([
+      { 
+        name: p.name || 'Unknown', 
+        role: p.role || 'Unassigned', 
+        status: p.status || 'Active'
+      }
+    ]);
+
+  if (error) {
+    console.error("Database save failed:", error.message);
+  } else {
+    console.log("Permanently saved to Supabase:", data);
+  }
+}
+
+// 2. FETCH data from Supabase when the application loads
+async function loadPersonnelFromDatabase() {
+  const { data, error } = await supabase
+    .from('personnel')
+    .select('*');
+
+  if (error) {
+    console.error("Error loading database profiles:", error.message);
+    return;
+  }
+
+  if (data && data.length > 0) {
+    // Map database properties back into your personnelData cache format
+    personnelData = data.map(function(dbRow, index) {
+      return {
+        svcNo: dbRow.id.toString(), // Uses database ID if your system lacks service numbers
+        name: dbRow.name,
+        role: dbRow.role,
+        status: dbRow.status,
+        clothing: {} // Keep empty or fill out later
+      };
+    });
+    
+    // Trigger your application's layout refreshing mechanics
+    if (typeof refresh === "function") refresh();
+  }
+}
+
+// Automatically load database files whenever the app starts up
+window.addEventListener('DOMContentLoaded', loadPersonnelFromDatabase);
+
+</script>
+
+
+
   </body>
 </html>
