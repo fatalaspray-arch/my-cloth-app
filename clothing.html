@@ -9745,6 +9745,8 @@
           } else {
             personnelData.push(pd);
             newCount++;
+
+            savePersonnelToDatabase(pd);
           }
         });
         saveClothingConfig();
