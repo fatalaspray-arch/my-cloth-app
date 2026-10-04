@@ -1094,6 +1094,8 @@
     <div class="footer">Secure Inventory System</div>
 
     <script src="sql-storage.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="cloud-sync.js"></script>
     <script>
       const memoryStore = (() => {
         const values = Object.create(null);
@@ -1102,6 +1104,7 @@
           setItem(key, value) { values[key] = String(value); try { localStorage.setItem(key, String(value)); } catch (e) {} if (window.sqlStorageSet) window.sqlStorageSet(key, value); }
         };
       })();
+      try { localStorage.removeItem("dit_stores_users"); } catch (error) {}
 
       // --- Theme Toggle ---
       function toggleTheme() {
@@ -1367,67 +1370,36 @@
       document.getElementById("newUserModules").innerHTML = buildModulePrivilegesHtml({});
 
       // --- Data Management ---
-      const STORAGE_KEY = "dit_stores_users";
       const DEPARTMENTS_KEY = "dit_departments_v1";
-      const DEFAULT_USERS = [
-        {
-          fullName: "Admin",
-          username: "admin",
-          email: "admin@dit.local",
-          password: "Password@123",
-          role: "Admin",
-          modules: getFullPrivileges(),
-        },
-      ];
-
-      function isValidUserShape(parsed) {
-        return (
-          Array.isArray(parsed) &&
-          parsed.length > 0 &&
-          typeof parsed[0].email === "string" &&
-          typeof parsed[0].modules === "object"
-        );
-      }
 
       async function getUsers() {
-        try {
-          const raw = memoryStore.getItem(STORAGE_KEY);
-          if (!raw) {
-            memoryStore.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-            return JSON.parse(JSON.stringify(DEFAULT_USERS));
-          }
-          const parsed = JSON.parse(raw);
-          if (!isValidUserShape(parsed)) {
-            memoryStore.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-            return JSON.parse(JSON.stringify(DEFAULT_USERS));
-          }
-          const departments = await getDepartments();
-          let changed = false;
-          parsed.forEach((user) => {
-            if (user.departmentPrivileges && typeof user.departmentPrivileges === "object") return;
-            user.departmentPrivileges = isAdminRole(user.role)
-              ? getFullDepartmentPrivileges(departments)
-              : (user.department && departments.includes(user.department)
-                ? { [user.department]: { view: true, add: true, edit: true, delete: true } }
-                : {});
-            changed = true;
-          });
-          if (changed) memoryStore.setItem(STORAGE_KEY, JSON.stringify(parsed));
-          return parsed;
-        } catch (err) {
-          console.error("Failed to load users, resetting to defaults:", err);
-            memoryStore.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-          return JSON.parse(JSON.stringify(DEFAULT_USERS));
-        }
+        const result = await window.ditCloudSync.manageUsers("list");
+        if (!result || !Array.isArray(result.users)) throw new Error("The shared account service returned invalid data.");
+        return result.users;
       }
 
       async function saveUsers(users) {
         try {
-          memoryStore.setItem(STORAGE_KEY, JSON.stringify(users));
-          return users;
+          const existing = await getUsers();
+          const incomingIds = new Set(users.filter((user) => user.id).map((user) => user.id));
+          for (const user of users) {
+            if (!user.id) {
+              await window.ditCloudSync.manageUsers("create", user);
+              continue;
+            }
+            const oldUser = existing.find((item) => item.id === user.id);
+            if (!oldUser) continue;
+            const fields = ["email", "username", "fullName", "role", "modules", "department", "departmentPrivileges", "password"];
+            const changed = fields.some((field) => JSON.stringify(oldUser[field] || null) !== JSON.stringify(user[field] || null));
+            if (changed) await window.ditCloudSync.manageUsers("update", user);
+          }
+          for (const oldUser of existing) {
+            if (!incomingIds.has(oldUser.id)) await window.ditCloudSync.manageUsers("delete", null, oldUser.id);
+          }
+          return await getUsers();
         } catch (err) {
           console.error("Failed to save users:", err);
-          alert("Could not save changes. Your browser storage may be full or disabled.");
+          alert("Could not save account changes: " + err.message);
           throw err;
         }
       }
@@ -1523,26 +1495,21 @@
         const passInput = document.getElementById("adminPasswordInput").value;
         const errorDiv = document.getElementById("adminAuthError");
         try {
-          const users = await getUsers();
-          const adminUser = users.find(
-            (u) => u.email.toLowerCase() === emailInput && u.password === passInput && isAdminRole(u.role)
-          );
-
-          if (adminUser) {
-            sessionStorage.setItem("isAdminSession", "true");
-            sessionStorage.setItem("loggedInUser", JSON.stringify(adminUser));
-            closeModal("adminAuthModal");
-            await loadAdminDashboard();
-            openModal("adminDashboardModal");
-            document.getElementById("adminAuthForm").reset();
-            errorDiv.style.display = "none";
-          } else {
-            errorDiv.textContent = "Incorrect email or password.";
-            errorDiv.style.display = "block";
-          }
+          const adminUser = await window.ditCloudSync.signIn(emailInput, passInput);
+          if (!isAdminRole(adminUser.role)) throw new Error("Administrator access is required.");
+          sessionStorage.removeItem("isAdminSession");
+          sessionStorage.setItem("isAdminSession", "true");
+          sessionStorage.setItem("loggedInUser", JSON.stringify(adminUser));
+          sessionStorage.setItem("username", adminUser.username || adminUser.fullName || adminUser.email);
+          await window.ditCloudSync.hydrate();
+          closeModal("adminAuthModal");
+          await loadAdminDashboard();
+          openModal("adminDashboardModal");
+          document.getElementById("adminAuthForm").reset();
+          errorDiv.style.display = "none";
         } catch (err) {
           console.error("Admin verification failed:", err);
-          errorDiv.textContent = "Something went wrong. Please try again.";
+          errorDiv.textContent = err.message || "Could not sign in.";
           errorDiv.style.display = "block";
         }
       }
@@ -1966,22 +1933,21 @@
       // --- Landing Page Login ---
       async function handleLogin(e) {
         e.preventDefault();
-        const identifier = document.getElementById("loginUser").value.trim().toLowerCase();
+        const identifier = document.getElementById("loginUser").value.trim();
         const password = document.getElementById("loginPass").value;
         const errorDiv = document.getElementById("loginError");
-        const users = await getUsers();
-        const user = users.find(
-          (u) =>
-            (u.email.toLowerCase() === identifier || (u.username || "").toLowerCase() === identifier) &&
-            u.password === password
-        );
-
-        if (user) {
+        errorDiv.style.display = "none";
+        try {
+          const user = await window.ditCloudSync.signIn(identifier, password);
+          sessionStorage.removeItem("isAdminSession");
           sessionStorage.setItem("loggedInUser", JSON.stringify(user));
           sessionStorage.setItem("username", user.username || user.fullName || user.email);
           if (isAdminRole(user.role)) sessionStorage.setItem("isAdminSession", "true");
+          await window.ditCloudSync.hydrate();
           window.location.href = "dashboard.html";
-        } else {
+        } catch (err) {
+          console.error("Login failed:", err);
+          errorDiv.textContent = err.message || "Invalid username/email or password.";
           errorDiv.style.display = "block";
         }
       }
@@ -1993,6 +1959,9 @@
           loggedInUser = JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
         } catch (error) {}
         if (!loggedInUser || !isAdminRole(loggedInUser.role) || sessionStorage.getItem("isAdminSession") !== "true") return;
+        const authUser = await window.ditCloudSync.requireSession();
+        if (!authUser || !isAdminRole(authUser.role)) return;
+        await window.ditCloudSync.hydrate();
         document.querySelector(".container").style.display = "none";
         await loadAdminDashboard();
         openModal("adminDashboardModal");

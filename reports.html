@@ -486,6 +486,8 @@
     <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
     <script src="sql-storage.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="cloud-sync.js"></script>
     <script>
       const memoryStore = (() => {
         const values = Object.create(null);
@@ -731,9 +733,19 @@
 
       searchInput.addEventListener('input', applyFilters);
 
-      renderActivities();
-      updateStats();
-      applyFilters();
+      document.addEventListener('DOMContentLoaded', async function () {
+        try {
+          var authUser = await window.ditCloudSync.requireSession();
+          if (!authUser) { window.location.href = 'index.html'; return; }
+          await window.ditCloudSync.hydrate();
+          renderActivities();
+          updateStats();
+          applyFilters();
+        } catch (error) {
+          console.error('Could not load shared activity records.', error);
+          showToast('Could not load shared records: ' + error.message, 'error');
+        }
+      });
     </script>
     <script src="module-background.js"></script>
   </body>

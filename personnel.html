@@ -351,6 +351,8 @@
 </head>
 <body>
   <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
+  <script src="supabase-config.js"></script>
+  <script src="cloud-sync.js"></script>
   <div class="module-background" aria-hidden="true"><canvas id="moduleBgCanvas"></canvas></div>
 
   <!-- Overlay for Modals -->
@@ -719,7 +721,16 @@
     let searchQuery = "";
 
     // --- Initialization ---
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        var authUser = await window.ditCloudSync.requireSession();
+        if (!authUser) { window.location.href = 'index.html'; return; }
+        await window.ditCloudSync.hydrate();
+      } catch (error) {
+        console.error('Could not load shared personnel records.', error);
+        if (typeof showToast === 'function') showToast('Could not load shared records: ' + error.message, 'error');
+        return;
+      }
       updateLoggedInUserDisplay();
 
       // --- Access Control ---

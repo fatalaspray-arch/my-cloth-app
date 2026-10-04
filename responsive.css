@@ -1,0 +1,130 @@
+/* Shared responsive fallback for all inventory pages */
+:root {
+  --mobile-padding: 16px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+}
+
+img,
+svg,
+canvas {
+  max-width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .main-container {
+    padding: 24px 20px;
+  }
+
+  .main-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .header-right {
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .date-badge-row {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 900px) {
+  .table-scroll-wrapper {
+    max-height: 52vh;
+  }
+
+  .filter-bar,
+  .toolbar-row,
+  .main-controls,
+  .panel-header,
+  .form-grid,
+  .form-grid-3col {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .panel-actions,
+  .header-actions,
+  .confirm-actions,
+  .modal-footer {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 720px) {
+  .main-container {
+    padding: 18px var(--mobile-padding);
+  }
+
+  .header-left h1 {
+    font-size: 1.8rem;
+  }
+
+  .user-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nav-dropdown-wrap,
+  .nav-toggle-btn {
+    width: 100%;
+  }
+
+  .nav-dropdown-menu {
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+
+  .table-card {
+    border-radius: 12px;
+  }
+
+  th,
+  td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .main-header {
+    padding-bottom: 12px;
+  }
+
+  .user-info {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-btn,
+  .btn,
+  .split-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modal {
+    max-width: none;
+    width: min(100%, 96vw);
+  }
+
+  .modal-body,
+  .modal-header,
+  .modal-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

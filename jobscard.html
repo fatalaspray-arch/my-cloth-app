@@ -359,6 +359,8 @@
 </head>
 <body>
     <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
+    <script src="supabase-config.js"></script>
+    <script src="cloud-sync.js"></script>
     <div class="module-background" aria-hidden="true"><canvas id="moduleBgCanvas"></canvas></div>
 
   <!-- TOAST NOTIFICATIONS -->
@@ -771,7 +773,16 @@
     let canImportJobBackup = false;
 
     /* --- INITIALIZATION --- */
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
+        try {
+            var authUser = await window.ditCloudSync.requireSession();
+            if (!authUser) { window.location.href = 'index.html'; return; }
+            await window.ditCloudSync.hydrate();
+        } catch (error) {
+            console.error('Could not load shared job card records.', error);
+            alert('Could not load shared records: ' + error.message);
+            return;
+        }
         // --- Access Control ---
         var _loginUser = null;
         try { _loginUser = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null'); } catch(e) {}

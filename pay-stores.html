@@ -1544,6 +1544,8 @@
     </div>
 
     <script src="sql-storage.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="cloud-sync.js"></script>
     <script>
       function toggleTheme() {
         document.documentElement.removeAttribute('data-theme');
@@ -3544,6 +3546,15 @@
       }
 
       async function init() {
+        try {
+          var authUser = await window.ditCloudSync.requireSession();
+          if (!authUser) { window.location.href = "index.html"; return; }
+          await window.ditCloudSync.hydrate();
+        } catch (error) {
+          console.error("Could not load shared pay-store records.", error);
+          alert("Could not load shared records: " + error.message);
+          return;
+        }
         initializeUser();
         loadDeptHistory();
         await loadRegistries();

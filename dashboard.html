@@ -624,6 +624,8 @@
 
   <body>
     <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
+    <script src="supabase-config.js"></script>
+    <script src="cloud-sync.js"></script>
     <!-- ANIMATED BACKGROUND -->
     <div class="bg-layer" aria-hidden="true">
       <div class="orb"></div>
@@ -888,6 +890,16 @@
           document.getElementById("reportsCard").style.display = "flex";
         }
       })();
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          const user = await window.ditCloudSync.requireSession();
+          if (!user) { window.location.replace("index.html"); return; }
+          await window.ditCloudSync.hydrate();
+        } catch (error) {
+          console.error("Could not load shared dashboard records.", error);
+          showToast("Could not connect to shared records: " + error.message, "error");
+        }
+      });
     </script>
     <script src="message-admin.js"></script>
   </body>

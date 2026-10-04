@@ -7815,6 +7815,8 @@ body::after {
                                         <th>Category</th>
                                         <th>Serial No.</th>
                                         <th>Body No.</th>
+                                        <th>Location</th>
+                                        <th>U/S Qty</th>
                                         <th>Picture</th>
                                         <th>Rmks</th>
                                     </tr>
@@ -8445,6 +8447,8 @@ body::after {
 </div>
 
 <script src="sql-storage.js"></script>
+<script src="supabase-config.js"></script>
+<script src="cloud-sync.js"></script>
 <script id="sk-scoped-script">
       const memoryStore = (() => {
         const values = Object.create(null);
@@ -11526,7 +11530,18 @@ body::after {
                 });
             }
 
-            document.addEventListener('DOMContentLoaded', () => { loadState(); initApp(); });
+            document.addEventListener('DOMContentLoaded', async () => {
+              try {
+                const user = await window.ditCloudSync.requireSession();
+                if (!user) { window.location.replace('index.html'); return; }
+                await window.ditCloudSync.hydrate();
+                loadState();
+                initApp();
+              } catch (error) {
+                console.error('Could not load shared inventory records.', error);
+                showToast('Could not load shared records: ' + error.message, 'error');
+              }
+            });
 
             var activitySnapshot = null;
             function recordInventoryActivity(action, detail, office, itemName) {
@@ -13154,7 +13169,7 @@ body::after {
             document.getElementById('previewPrintBtn').addEventListener('click', () => { const pa = document.getElementById('printArea'); let ir = ''; const pb = document.getElementById('previewItemsBody'); Array.from(pb.querySelectorAll('tr')).forEach((tr, idx) => { const cells = tr.querySelectorAll('td'); ir += '<tr><td>' + (idx + 1) + '</td><td>' + cells[1].innerText + '</td><td>' + cells[2].innerText + '</td><td>' + cells[3].innerText + '</td><td>' + cells[4].innerText + '</td></tr>'; }); let infoBlock = ''; if (_previewContext === 'receive') { infoBlock = '<div style="margin-top:14pt;font-size:10pt;border-top:2pt solid #000;padding-top:10pt"><div style="font-weight:bold;text-transform:uppercase;letter-spacing:1.5pt;margin-bottom:8pt;font-size:9pt">Supplier Information</div><div style="margin-bottom:4pt">Received From: <strong>' + document.getElementById('previewName').innerText + '</strong></div><div style="margin-top:16pt">Sign: ________________________&emsp;&emsp;Date: ________________________</div></div>'; } else { infoBlock = '<div style="margin-top:14pt;font-size:10pt;border-top:2pt solid #000;padding-top:10pt"><div style="font-weight:bold;text-transform:uppercase;letter-spacing:1.5pt;margin-bottom:8pt;font-size:9pt">Receiver Information</div><div style="margin-bottom:4pt">Service No: ' + document.getElementById('previewServiceNo').innerText + '</div><div style="margin-bottom:4pt">Name: ' + document.getElementById('previewName').innerText + '</div><div style="margin-bottom:4pt">Section/Unit: ' + document.getElementById('previewIssuedTo').innerText + '</div><div style="margin-bottom:4pt">Contact: ' + document.getElementById('previewPhone').innerText + '</div><div style="margin-top:16pt">Sign: ________________________&emsp;&emsp;Date: ________________________</div></div>'; } pa.innerHTML = '<div style="text-align:center;border-bottom:2pt solid #000;padding-bottom:8pt;margin-bottom:8pt"><h2 style="margin:0;font-size:13pt">' + document.getElementById('previewFormTitle').textContent + '</h2><p style="margin:3pt 0 0 0;font-size:10pt">GAF DIT</p></div><div style="margin-bottom:8pt;font-size:10pt;"><div>Invoice/ Receipt no: <strong>' + document.getElementById('previewInvoiceNo').innerText + '</strong></div><div>Date: <strong>' + document.getElementById('previewDate').innerText + '</strong></div></div><table style="width:100%;border-collapse:collapse;font-size:9pt;table-layout:fixed"><thead><tr><th style="width:8%;border:1pt solid #000;padding:3pt 4pt;font-weight:700;text-transform:uppercase;text-align:center">#</th><th style="width:32%;border:1pt solid #000;padding:3pt 4pt;font-weight:700;text-transform:uppercase;text-align:center">Description</th><th style="width:28%;border:1pt solid #000;padding:3pt 4pt;font-weight:700;text-transform:uppercase;text-align:center">Serial</th><th style="width:10%;border:1pt solid #000;padding:3pt 4pt;font-weight:700;text-transform:uppercase;text-align:center">QTY</th><th style="width:22%;border:1pt solid #000;padding:3pt 4pt;font-weight:700;text-transform:uppercase;text-align:center">State</th></tr></thead><tbody>' + ir + '</tbody></table>' + infoBlock; setTimeout(() => window.print(), 300); });
             document.getElementById('previewBackBtn').addEventListener('click', () => { closeModal('previewModal'); if (_previewContext === 'issue') openModal('issueModal'); else if (_previewContext === 'receive') openModal('receiveModal'); });
 
-            document.getElementById('previewConfirmBtn').addEventListener('click', () => { if (_previewContext === 'receive') { confirmReceive(); return; } const inv = document.getElementById('previewInvoiceNo').innerText; const recip = document.getElementById('previewIssuedTo').innerText; const svcNo = document.getElementById('previewServiceNo').innerText; const recName = document.getElementById('previewName').innerText; const phone = document.getElementById('previewPhone').innerText; const date = new Date().toISOString().split('T')[0]; const txItems = []; let tc = 0; selectedIssueRows.forEach(row => { const item = state.data.items.find(i => i.id === row.itemId); if (!item) return; if (row.itemType === 'bulk') { if (item.qtyAvailable >= row.qty) { item.qtyAvailable -= row.qty; txItems.push({ name: item.name, category: item.category, type: 'bulk', qty: row.qty, state: row.state || 'Serviceable' }); tc++; } } else { const snap = { name: item.name, category: item.category, type: 'serialized', serials: [], state: row.state || 'Serviceable' }; row.serials.forEach(sk => { const s = findSerialByKey(item, sk); if (s) { s.status = 'issued'; s.issuedTo = recip; s.issueDate = date; snap.serials.push(isNaSerial(s) ? NA_SERIAL : s.no); } }); snap.qty = snap.serials.length; if (snap.serials.length > 0) { txItems.push(snap); tc++; } } }); if (tc > 0) { state.data.transactions.push({ id: 'txn_' + Date.now(), invoiceNo: inv, date, issuedTo: recip, items: txItems, dept: state.activeDept }); const imt = document.getElementById('issueInvoiceManualToggle'); if (!imt || !imt.checked) state.invoiceCounter++; const docRecs = txItems.map(i => ({ name: i.name, qty: i.qty, serialDisplay: i.type === 'bulk' ? 'N/A' : (i.serials || []).join(', '), state: i.state })); state.data.savedDocs.push({ id: 'sd_' + Date.now() + '_iss', name: 'Issue ' + formatDateForPrint(), savedAt: new Date().toISOString(), docType: 'issue', invoiceNo: inv, date: formatDateForPrint(), issuedTo: recip, serviceNo: svcNo, recipientName: recName, phone: phone, itemDetails: docRecs }); saveState(); updateSavedDocsBadge(); showToast('Issue Confirmed: ' + tc + ' item(s) issued to ' + recip); selectedIssueRows = []; renderSelectedItemsTable(); closeModal('previewModal'); refreshAll(); } else showToast('No valid items.', 'error'); });
+            document.getElementById('previewConfirmBtn').addEventListener('click', () => { if (_previewContext === 'receive') { confirmReceive(); return; } const inv = document.getElementById('previewInvoiceNo').innerText; const recip = document.getElementById('previewIssuedTo').innerText; const svcNo = document.getElementById('previewServiceNo').innerText; const recName = document.getElementById('previewName').innerText; const phone = document.getElementById('previewPhone').innerText; const date = new Date().toISOString().split('T')[0]; const txItems = []; let tc = 0; selectedIssueRows.forEach(row => { const item = state.data.items.find(i => i.id === row.itemId); if (!item) return; if (row.itemType === 'bulk') { if (item.qtyAvailable >= row.qty) { item.qtyAvailable -= row.qty; txItems.push({ name: item.name, category: item.category, type: 'bulk', qty: row.qty, state: row.state || 'Serviceable' }); tc++; } } else { const snap = { name: item.name, category: item.category, type: 'serialized', serials: [], state: row.state || 'Serviceable' }; row.serials.forEach(sk => { const s = findSerialByKey(item, sk); if (s) { s.status = 'issued'; s.issuedTo = recip; s.issueDate = date; snap.serials.push(isNaSerial(s) ? NA_SERIAL : s.no); } }); snap.qty = snap.serials.length; if (snap.serials.length > 0) { txItems.push(snap); tc++; } } }); if (tc > 0) { state.data.transactions.push({ id: 'txn_' + Date.now(), invoiceNo: inv, date, issuedTo: recip, items: txItems, dept: state.activeDept }); const imt = document.getElementById('issueInvoiceManualToggle'); if (!imt || !imt.checked) state.invoiceCounter++; const docRecs = txItems.map(i => ({ name: i.name, qty: i.qty, serialDisplay: i.type === 'bulk' ? 'N/A' : (i.serials || []).join(', '), state: i.state })); state.data.savedDocs.push({ id: 'sd_' + Date.now() + '_iss', name: 'Issue ' + formatDateForPrint(), savedAt: new Date().toISOString(), docType: 'issue', department: state.activeDept, invoiceNo: inv, date: formatDateForPrint(), issuedTo: recip, serviceNo: svcNo, recipientName: recName, phone: phone, itemDetails: docRecs }); saveState(); updateSavedDocsBadge(); showToast('Issue Confirmed: ' + tc + ' item(s) issued to ' + recip); selectedIssueRows = []; renderSelectedItemsTable(); closeModal('previewModal'); refreshAll(); } else showToast('No valid items.', 'error'); });
 
             function generateReceiveInvoice() { const yr = new Date().getFullYear(); return 'DIT/RV/' + String(state.receiveInvoiceCounter).padStart(3, '0') + '/' + yr; }
             document.getElementById('receiveBtn').addEventListener('click', () => { document.getElementById('receiveInvoiceNo').value = generateReceiveInvoice(); document.getElementById('receiveInvoiceNo').readOnly = true; const rmt = document.getElementById('receiveInvoiceManualToggle'); if (rmt) rmt.checked = false; document.getElementById('receiveDate').valueAsDate = new Date(); document.getElementById('receiveRcvdFrom').value = ''; document.getElementById('receiveItemsContainer').innerHTML = ''; addReceiveRow(); openModal('receiveModal'); });
@@ -13162,7 +13177,7 @@ body::after {
 
             document.getElementById('receivePreviewBtn').addEventListener('click', () => { const rows = document.querySelectorAll('.receive-row-container'); if (rows.length === 0) return showToast('Add at least one item.', 'error'); if (!document.getElementById('receiveInvoiceNo').value.trim()) return showToast('Invoice No. is required', 'error'); const dr = document.getElementById('receiveDate').value; const rf = capitalizeWords(document.getElementById('receiveRcvdFrom').value) || 'Unknown'; const inv = document.getElementById('receiveInvoiceNo').value; const dept = state.activeDept; _pendingReceiveRows = []; rows.forEach(row => { const name = capitalizeWords(row.querySelector('.rcv-item-name').value); if (!name) return; const qty = parseInt(row.querySelector('.rcv-qty').value) || 1; const ss = row.querySelector('.rcv-serials').value; const cat = row.querySelector('.rcv-category').value || 'Uncategorized'; const cls = row.querySelector('.rcv-class').value || 'G'; let type = 'bulk', serials = []; if (ss && ss.trim()) { type = 'serialized'; const sl = ss.split(',').map(s => s.trim()).filter(s => s); if (sl.length > 0) sl.forEach(s => serials.push(s)); else type = 'bulk'; } if (type === 'serialized' && serials.length === 0) for (let i = 0; i < qty; i++) serials.push(NA_SERIAL); _pendingReceiveRows.push({ name, category: cat, itemClass: cls, type, qty: (type === 'bulk' ? qty : serials.length), serials: type === 'serialized' ? serials : [] }); }); if (_pendingReceiveRows.length === 0) return showToast('No valid items to receive.', 'error'); _previewContext = 'receive'; document.getElementById('previewFormTitle').textContent = 'RECEIPT VOUCHER'; document.getElementById('previewInvoiceNo').innerText = inv; document.getElementById('previewDate').innerText = formatDateDisplay(dr); document.getElementById('previewReceiverTitle').textContent = 'Supplier Info'; document.getElementById('previewServiceNo').innerText = '-'; document.getElementById('previewName').innerText = escHtml(rf); document.getElementById('previewIssuedTo').innerText = '-'; document.getElementById('previewPhone').innerText = '-'; document.getElementById('previewReceiverFields').style.display = ''; const pb = document.getElementById('previewItemsBody'); pb.innerHTML = ''; _pendingReceiveRows.forEach((rec, idx) => { const tr = document.createElement('tr'); const serialDisplay = rec.type === 'serialized' && rec.serials.length > 0 ? rec.serials.map(s => '<span style="font-family:\'JetBrains Mono\',monospace;font-size:.8rem">' + escHtml(s) + '</span>').join(', ') : '<span class="na-badge">N/A</span>'; tr.innerHTML = '<td style="text-align:center;font-weight:600;color:var(--text-dim)">' + (idx + 1) + '</td><td style="font-weight:600">' + escHtml(rec.name) + '</td><td>' + serialDisplay + '</td><td style="text-align:center;font-weight:700">' + rec.qty + '</td><td style="text-align:center;font-weight:600;font-size:.82rem">' + (rec.type === 'bulk' ? 'Bulk' : 'Serviceable') + '</td>'; pb.appendChild(tr); }); document.getElementById('previewConfirmBtn').textContent = 'Confirm Receipt'; document.getElementById('previewConfirmBtn').style.display = ''; closeModal('receiveModal'); openModal('previewModal'); });
 
-            function confirmReceive() { const inv = document.getElementById('previewInvoiceNo').innerText; const dr = document.getElementById('previewDate').innerText; const rf = document.getElementById('previewName').innerText; const dept = state.activeDept; let sc = 0; const docRecs = []; _pendingReceiveRows.forEach(rec => { const { name, category, itemClass, type, qty } = rec; const office = getOfficeDefaultForDept(dept) || 'Uncategorized'; let serials = []; if (type === 'serialized') { (rec.serials || []).forEach(s => serials.push({ no: s, status: 'available', isUs: false, bodyNo: '', image: '' })); if (serials.length === 0) for (let i = 0; i < qty; i++) serials.push(createNaSerial('')); } const ex = state.data.items.find(i => normItemName(i.name) === normItemName(name) && i.category === category && i.department === dept && i.office === office); if (ex) { if (ex.type === 'bulk' && type === 'bulk') { ex.qty += qty; ex.qtyAvailable += qty; } else if (ex.type === 'serialized' && type === 'serialized') { const esn = new Set(ex.serials.filter(s => s.no).map(s => s.no.toLowerCase())); serials.forEach(ns => { if (!esn.has(ns.no.toLowerCase())) ex.serials.push(ns); }); } else { showToast('Conflict: ' + type + ' vs ' + ex.type + ' for ' + name, 'error'); return; } ex.receivedFrom = rf; ex.receivedBy = currentUser; ex.dateReceived = dr; addHistoryEntry(ex, { date: dr, type: 'received', rcvdFrom: rf, rcvdBy: currentUser, qty: type === 'bulk' ? qty : serials.length, note: 'Additional items received' }); } else { const newItem = { id: 'itm_' + Date.now() + Math.random(), name, category, department: dept, office, dofq: 'Each', itemClass, receivedFrom: rf, receivedBy: currentUser, dateReceived: dr, type, qty: (type === 'bulk' ? qty : serials.length), qtyAvailable: (type === 'bulk' ? qty : serials.length), serials, history: [] }; addHistoryEntry(newItem, { date: dr, type: 'received', rcvdFrom: rf, rcvdBy: currentUser, qty: type === 'bulk' ? qty : serials.length, note: 'Initial entry' }); state.data.items.push(newItem); } docRecs.push({ name, category, itemClass, type, qty: type === 'bulk' ? qty : serials.length, serials: type === 'bulk' ? [] : serials.map(s => s.no) }); sc++; }); if (sc > 0) { const de = { id: 'sd_' + Date.now() + '_rcv', name: 'Receive ' + formatDateForPrint(), savedAt: new Date().toISOString(), docType: 'receive', invoiceNo: inv, date: dr, receivedFrom: rf, items: docRecs }; state.data.savedDocs.push(de); mergeDuplicateItems(dept, null, getOfficeDefaultForDept(dept) || 'Uncategorized'); const rmt = document.getElementById('receiveInvoiceManualToggle'); if (!rmt || !rmt.checked) state.receiveInvoiceCounter++; saveState(); updateSavedDocsBadge(); refreshAll(); showToast('Receipt ' + inv + ' confirmed. ' + sc + ' items added.'); _pendingReceiveRows = []; closeModal('previewModal'); } else showToast('No items processed.', 'error'); }
+            function confirmReceive() { const inv = document.getElementById('previewInvoiceNo').innerText; const dr = document.getElementById('previewDate').innerText; const rf = document.getElementById('previewName').innerText; const dept = state.activeDept; let sc = 0; const docRecs = []; _pendingReceiveRows.forEach(rec => { const { name, category, itemClass, type, qty } = rec; const office = getOfficeDefaultForDept(dept) || 'Uncategorized'; let serials = []; if (type === 'serialized') { (rec.serials || []).forEach(s => serials.push({ no: s, status: 'available', isUs: false, bodyNo: '', image: '' })); if (serials.length === 0) for (let i = 0; i < qty; i++) serials.push(createNaSerial('')); } const ex = state.data.items.find(i => normItemName(i.name) === normItemName(name) && i.category === category && i.department === dept && i.office === office); if (ex) { if (ex.type === 'bulk' && type === 'bulk') { ex.qty += qty; ex.qtyAvailable += qty; } else if (ex.type === 'serialized' && type === 'serialized') { const esn = new Set(ex.serials.filter(s => s.no).map(s => s.no.toLowerCase())); serials.forEach(ns => { if (!esn.has(ns.no.toLowerCase())) ex.serials.push(ns); }); } else { showToast('Conflict: ' + type + ' vs ' + ex.type + ' for ' + name, 'error'); return; } ex.receivedFrom = rf; ex.receivedBy = currentUser; ex.dateReceived = dr; addHistoryEntry(ex, { date: dr, type: 'received', rcvdFrom: rf, rcvdBy: currentUser, qty: type === 'bulk' ? qty : serials.length, note: 'Additional items received' }); } else { const newItem = { id: 'itm_' + Date.now() + Math.random(), name, category, department: dept, office, dofq: 'Each', itemClass, receivedFrom: rf, receivedBy: currentUser, dateReceived: dr, type, qty: (type === 'bulk' ? qty : serials.length), qtyAvailable: (type === 'bulk' ? qty : serials.length), serials, history: [] }; addHistoryEntry(newItem, { date: dr, type: 'received', rcvdFrom: rf, rcvdBy: currentUser, qty: type === 'bulk' ? qty : serials.length, note: 'Initial entry' }); state.data.items.push(newItem); } docRecs.push({ name, category, itemClass, type, qty: type === 'bulk' ? qty : serials.length, serials: type === 'bulk' ? [] : serials.map(s => s.no) }); sc++; }); if (sc > 0) { const de = { id: 'sd_' + Date.now() + '_rcv', name: 'Receive ' + formatDateForPrint(), savedAt: new Date().toISOString(), docType: 'receive', department: dept, invoiceNo: inv, date: dr, receivedFrom: rf, items: docRecs }; state.data.savedDocs.push(de); mergeDuplicateItems(dept, null, getOfficeDefaultForDept(dept) || 'Uncategorized'); const rmt = document.getElementById('receiveInvoiceManualToggle'); if (!rmt || !rmt.checked) state.receiveInvoiceCounter++; saveState(); updateSavedDocsBadge(); refreshAll(); showToast('Receipt ' + inv + ' confirmed. ' + sc + ' items added.'); _pendingReceiveRows = []; closeModal('previewModal'); } else showToast('No items processed.', 'error'); }
 
             function updateSavedDocsBadge() { const total = (state.data.savedDocs || []).length; const badge = document.getElementById('savedDocsBadge'); if (total > 0) { badge.innerText = total; badge.setAttribute('data-count', total); badge.style.display = 'flex'; } else { badge.innerText = '0'; badge.setAttribute('data-count', '0'); badge.style.display = 'none'; } }
             document.getElementById('savedDocsBtn').addEventListener('click', () => { renderSavedDocsContent(); openModal('savedDocsModal'); });
@@ -13789,6 +13804,10 @@ body::after {
               const picture = String(canonicalCell(row, ['Item Picture', 'Picture', 'Image', 'Image URL'], '')).trim();
               const classColumn = String(canonicalCell(row, ['Class', 'Item Class', 'Item Type'], '')).trim();
               const itemClass = bodyInfo.itemClass || (/^tech/i.test(classColumn) ? 'T' : 'G');
+              const parsedUnserviceable = parseInt(canonicalCell(row, ['Unserv', 'Unserviceable Qty', 'Unserviceable Quantity'], ''), 10);
+              const unserviceableQty = Number.isFinite(parsedUnserviceable)
+                ? Math.max(0, Math.min(qty, parsedUnserviceable))
+                : (/u\/s|unserviceable|damaged/i.test(remarks) ? qty : 0);
               return {
                 sourceType: sourceType || 'Document',
                 sourceSheet: sourceSheet || 'Document',
@@ -13796,7 +13815,8 @@ body::after {
                 name, department, office, category,
                 dofq: String(canonicalCell(row, ['D of Q', 'DofQ', 'Unit'], 'Each')).trim() || 'Each',
                 itemClass, qty, serials, bodyNos: bodyInfo.normalized ? canonicalList(bodyInfo.normalized) : rawBodyNos,
-                remarks, isUs: /u\/s|unserviceable|damaged/i.test(remarks),
+                location: String(canonicalCell(row, ['Storage Location', 'Item Location'], '')).trim(),
+                unserviceableQty, remarks, isUs: unserviceableQty > 0,
                 image: image || (/^(data:image\/|https?:\/\/|blob:)/i.test(picture) ? picture : '')
               };
             }
@@ -13806,6 +13826,119 @@ body::after {
                 if (!canonicalCell(row, ['Office', 'Location', 'Store'], '')) row.Office = officeHeading || getOfficeDefaultForDept(state.activeDept) || defaultOffice;
                 return canonicalImportRow(row, officeHeading || getOfficeDefaultForDept(state.activeDept) || defaultOffice, excelRow, images[excelRow] || '', 'Excel');
               }).filter(Boolean);
+            }
+            function canonicalRowsFromStoresGrid(grid, sheetName, images) {
+              const imported = [];
+              const text = value => String(value === null || value === undefined ? '' : value).trim();
+              const number = value => {
+                const parsed = parseInt(text(value).replace(/,/g, ''), 10);
+                return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+              };
+              const isStoresHeader = row => {
+                const cells = Array.isArray(row) ? row.map(text) : [];
+                return cells.some(value => /^description$/i.test(value)) &&
+                  cells.some(value => /^qty$/i.test(value)) &&
+                  cells.some(value => /serviceability state/i.test(value)) &&
+                  cells.some(value => /^(serial number|serial no\.?)$/i.test(value)) &&
+                  cells.some(value => /^(body number|body no\.?)$/i.test(value));
+              };
+
+              for (let headerIndex = 0; headerIndex < grid.length; headerIndex++) {
+                if (!isStoresHeader(grid[headerIndex])) continue;
+                const headers = Array.isArray(grid[headerIndex]) ? grid[headerIndex] : [];
+                const srlIndex = headers.findIndex(value => /^srl\.?$/i.test(text(value)));
+                const descriptionIndex = headers.findIndex(value => /^(description|item name|name)$/i.test(text(value)));
+                const qtyIndex = headers.findIndex(value => /^(qty|quantity)$/i.test(text(value)));
+                const serviceabilityIndex = headers.findIndex(value => /serviceability state/i.test(text(value)));
+                const serialIndex = headers.findIndex(value => /^(serial number|serial no\.?)$/i.test(text(value)));
+                const bodyIndex = headers.findIndex(value => /^(body number|body no\.?)$/i.test(text(value)));
+                const locationIndex = headers.findIndex(value => /^location$/i.test(text(value)));
+                const remarksIndex = headers.findIndex(value => /^(remarks?|rmks)$/i.test(text(value)));
+                if (descriptionIndex < 0 || qtyIndex < 0 || serviceabilityIndex < 0 || serialIndex < 0 || bodyIndex < 0) continue;
+
+                const subheaders = Array.isArray(grid[headerIndex + 1]) ? grid[headerIndex + 1] : [];
+                const unserviceableIndex = subheaders.findIndex((value, index) =>
+                  index >= serviceabilityIndex && /^unserv(?:iceable)?$/i.test(text(value)),
+                );
+                const nextHeaderIndex = grid.findIndex((row, index) => index > headerIndex && isStoresHeader(row));
+                const tableEndIndex = nextHeaderIndex < 0 ? grid.length : nextHeaderIndex;
+                let categoryHeading = '';
+                for (let headingIndex = headerIndex - 1; headingIndex >= Math.max(0, headerIndex - 5); headingIndex--) {
+                  const headingText = (grid[headingIndex] || []).map(text).filter(Boolean).join(' ');
+                  const titleMatch = headingText.match(/inventory\s+of\s+stores.*?\(([^)]+)\)/i) ||
+                    headingText.match(/inventory\s+of\s+stores\s*[-:]\s*(.+)/i);
+                  if (titleMatch) {
+                    categoryHeading = String(titleMatch[1] || '').trim();
+                    break;
+                  }
+                }
+                const letterRowIndex = headerIndex + 2;
+                const letterCells = (grid[letterRowIndex] || []).filter(value => /^\(?[a-i]\)?$/i.test(text(value)));
+                const firstDataIndex = letterCells.length >= 3 ? letterRowIndex + 1 : headerIndex + 1;
+                let previousItem = null;
+
+                for (let rowIndex = firstDataIndex; rowIndex < tableEndIndex; rowIndex++) {
+                  const row = Array.isArray(grid[rowIndex]) ? grid[rowIndex] : [];
+                  const rowSerials = canonicalList(row[serialIndex]).filter(value => !/^n\/?a$/i.test(value));
+                  const rowBodyNos = canonicalList(row[bodyIndex]);
+                  const rowLocation = text(row[locationIndex]);
+                  const rowUnserviceableQty = number(row[unserviceableIndex]);
+                  const name = normalizeImportedDescription(text(row[descriptionIndex]));
+                  if (!name || /^(description|item name|name)$/i.test(name)) {
+                    if (previousItem && (rowSerials.length || rowBodyNos.length)) {
+                      previousItem.serials.push(...rowSerials);
+                      const continuationBodyInfo = detectClassAndNormalizeBodyNo(rowBodyNos.join(', '));
+                      previousItem.bodyNos.push(...(continuationBodyInfo.normalized
+                        ? canonicalList(continuationBodyInfo.normalized)
+                        : rowBodyNos));
+                      const continuationUnits = Math.max(rowSerials.length, rowBodyNos.length);
+                      previousItem.unitLocations.push(...Array(continuationUnits).fill(rowLocation));
+                      previousItem.unitIsUs.push(...Array.from({ length: continuationUnits }, (_, index) => index < rowUnserviceableQty));
+                      previousItem.unserviceableQty += Math.min(continuationUnits, rowUnserviceableQty);
+                    }
+                    continue;
+                  }
+
+                  const qty = number(row[qtyIndex]);
+                  const itemQty = qty || Math.max(rowSerials.length, rowBodyNos.length, text(row[srlIndex]) ? 1 : 0);
+                  if (!itemQty) continue;
+                  const unserviceableQty = Math.min(itemQty, rowUnserviceableQty);
+                  const rowRemarks = text(row[remarksIndex]);
+                  const bodyInfo = detectClassAndNormalizeBodyNo(rowBodyNos.join(', '));
+                  const headingUpper = categoryHeading.toUpperCase();
+                  const bodyNumbers = rowBodyNos.join(' ');
+                  const category = /TECH/.test(headingUpper) || /\/TECH\//i.test(bodyNumbers)
+                    ? 'Technical Stores'
+                    : /GENERAL|GEN/.test(headingUpper) || /\/GEN\//i.test(bodyNumbers)
+                      ? 'General Stores'
+                      : capitalizeFirstCategoryWord(categoryHeading || 'Uncategorized');
+
+                  imported.push({
+                    sourceType: 'Excel',
+                    sourceSheet: sheetName,
+                    sourceRow: rowIndex + 1,
+                    name: name,
+                    department: state.activeDept || 'DIT',
+                    office: sheetName,
+                    category: category,
+                    dofq: 'Each',
+                    itemClass: bodyInfo.itemClass || (/TECH/.test(headingUpper) ? 'T' : 'G'),
+                    qty: itemQty,
+                    serials: rowSerials,
+                    bodyNos: bodyInfo.normalized ? canonicalList(bodyInfo.normalized) : rowBodyNos,
+                    location: rowLocation,
+                    unitLocations: Array(Math.max(rowSerials.length, rowBodyNos.length)).fill(rowLocation),
+                    unitIsUs: Array.from({ length: Math.max(rowSerials.length, rowBodyNos.length) }, (_, index) => index < unserviceableQty),
+                    unserviceableQty: unserviceableQty,
+                    remarks: rowRemarks,
+                    isUs: unserviceableQty > 0 || (unserviceableIndex < 0 && /u\/s|unserviceable|damaged/i.test(rowRemarks)),
+                    image: images[rowIndex] || '',
+                  });
+                  previousItem = imported[imported.length - 1];
+                }
+              }
+
+              return imported;
             }
             function canonicalOfficeBeforeTable(table) {
               let element = table.previousElementSibling;
@@ -13870,6 +14003,19 @@ body::after {
                 const normalized = sheetName.trim().toLowerCase();
                 if (normalized === 'loans' || normalized === 'safe keeping' || normalized === 'safe keeping items') continue;
                 const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '', raw: false });
+                const hasStoresHeaders = sheetRows.some(row =>
+                  row.some(cell => /^description$/i.test(String(cell || '').trim())) &&
+                  row.some(cell => /^qty$/i.test(String(cell || '').trim())) &&
+                  row.some(cell => /serviceability state/i.test(String(cell || '').trim())) &&
+                  row.some(cell => /^(serial number|serial no\.?)$/i.test(String(cell || '').trim())) &&
+                  row.some(cell => /^(body number|body no\.?)$/i.test(String(cell || '').trim())),
+                );
+                if (hasStoresHeaders) {
+                  const images = await getEmbeddedExcelImages(data, sheetName);
+                  canonicalImportOffices.push({ name: sheetName.trim(), department: state.activeDept || 'DIT' });
+                  canonicalImportRows.push(...canonicalRowsFromStoresGrid(sheetRows, sheetName.trim(), images));
+                  continue;
+                }
                 const headerRowIndex = sheetRows.findIndex(row => row.some(cell => /description|item name|serial no|qty|quantity/i.test(String(cell || ''))));
                 const officeHeading = sheetRows.slice(0, headerRowIndex < 0 ? 4 : headerRowIndex).map(row => row.filter(Boolean).join(' ').trim()).map(canonicalOfficeLabel).find(Boolean) || getOfficeDefaultForDept(state.activeDept) || defaultOffice;
                 canonicalRememberOffice(officeHeading, state.activeDept);
@@ -13887,7 +14033,8 @@ body::after {
               canonicalImportRows.forEach((item, index) => {
                 const picture = item.image ? '<img src="' + escAttr(item.image) + '" alt="Item picture" style="width:34px;height:34px;object-fit:cover;border-radius:4px">' : '-';
                 const tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + (index + 1) + '.</td><td><strong>' + escHtml(item.sourceType) + '</strong><br><small>' + escHtml(item.sourceSheet) + '</small></td><td>' + escHtml(item.department + ' / ' + item.office) + '</td><td>' + escHtml(item.name) + '</td><td>' + item.qty + '</td><td>' + escHtml(item.category) + '</td><td>' + escHtml(item.serials.join(', ') || 'N/A') + '</td><td>' + escHtml(item.bodyNos.join(', ')) + '</td><td>' + picture + '</td><td>' + escHtml(item.remarks) + '</td>';
+                const locations = [...new Set((item.unitLocations || []).concat(item.location || []).filter(Boolean))];
+                tr.innerHTML = '<td>' + (index + 1) + '.</td><td><strong>' + escHtml(item.sourceType) + '</strong><br><small>' + escHtml(item.sourceSheet) + '</small></td><td>' + escHtml(item.department + ' / ' + item.office) + '</td><td>' + escHtml(item.name) + '</td><td>' + item.qty + '</td><td>' + escHtml(item.category) + '</td><td>' + escHtml(item.serials.join(', ') || 'N/A') + '</td><td>' + escHtml(item.bodyNos.join(', ')) + '</td><td>' + escHtml(locations.join(', ')) + '</td><td>' + Number(item.unserviceableQty || 0) + ' / ' + item.qty + '</td><td>' + picture + '</td><td>' + escHtml(item.remarks) + '</td>';
                 tbody.appendChild(tr);
               });
               if (!canonicalImportRows.length) showToast('No valid item rows found in the document.', 'error');
@@ -13903,7 +14050,19 @@ body::after {
                 for (let index = 0; index < row.qty; index++) {
                   const bodyNo = row.bodyNos[index] || row.bodyNos[0] || '';
                   const serialNo = row.serials[index] || NA_SERIAL;
-                  serials.push(serialNo === NA_SERIAL ? createNaSerial(bodyNo) : { no: serialNo.toUpperCase(), status: 'available', isUs: row.isUs, bodyNo, image: row.image || '' });
+                  const isUs = Array.isArray(row.unitIsUs) && typeof row.unitIsUs[index] === 'boolean'
+                    ? row.unitIsUs[index]
+                    : typeof row.unserviceableQty === 'number'
+                      ? index < row.unserviceableQty
+                      : Boolean(row.isUs);
+                  const serial = serialNo === NA_SERIAL
+                    ? createNaSerial(bodyNo)
+                    : { no: serialNo.toUpperCase(), status: 'available', bodyNo, image: row.image || '' };
+                  serial.isUs = isUs;
+                  const serialLocation = row.unitLocations && row.unitLocations[index] || row.location;
+                  if (serialLocation) serial.location = serialLocation;
+                  if (row.image) serial.image = row.image;
+                  serials.push(serial);
                 }
                 const existing = state.data.items.find(item => item.name.toLowerCase() === row.name.toLowerCase() && item.category === row.category && item.department === row.department && item.office === row.office && item.type === 'serialized');
                 if (existing) {

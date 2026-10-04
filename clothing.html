@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Clothing Inventory System</title>
     <script src="sql-storage.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="cloud-sync.js"></script>
     <script>
       const memoryStore = (() => {
         const values = Object.create(null);
@@ -4445,7 +4447,278 @@
         ISSUE_LOG_KEY = "military_clothing_issues_v1",
         THEME_KEY = "dit_theme",
         ACTIVITY_LOG_KEY = "dit_activity_log_v1";
+      var SUPABASE_URL = "https://xpoiysklivftpzmflbdv.supabase.co";
+      var SUPABASE_KEY = "sb_publishable_5O4yT6UZV_aCoHC0U01EZw_15e_hb28";
+      var SUPABASE_PENDING_KEY = "military_clothing_supabase_pending_v1";
+      var SUPABASE_MIGRATED_KEY = "military_clothing_supabase_migrated_v1";
       var activitySnapshot = null;
+
+      function getPendingSupabaseChanges() {
+        try {
+          var pending = JSON.parse(memoryStore.getItem(SUPABASE_PENDING_KEY) || "[]");
+          return Array.isArray(pending) ? pending : [];
+        } catch (error) {
+          console.error("Could not read pending Supabase changes.", error);
+          return [];
+        }
+      }
+
+      function setPendingSupabaseChanges(pending) {
+        memoryStore.setItem(SUPABASE_PENDING_KEY, JSON.stringify(pending));
+      }
+
+      function queueSupabaseChange(change) {
+        var pending = getPendingSupabaseChanges().filter(function (item) {
+          return item.svcNo !== change.svcNo;
+        });
+        pending.push(change);
+        setPendingSupabaseChanges(pending);
+      }
+
+      async function requestSupabase(path, options) {
+        var requestOptions = options || {};
+        var accessToken = window.ditCloudSync ? await window.ditCloudSync.getAccessToken() : null;
+        if (!accessToken) throw new Error("Sign in is required to access shared personnel records.");
+        var headers = Object.assign(
+          {
+            apikey: SUPABASE_KEY,
+            Authorization: "Bearer " + accessToken,
+            Accept: "application/json",
+          },
+          requestOptions.headers || {},
+        );
+        if (requestOptions.body !== undefined) headers["Content-Type"] = "application/json";
+        var response;
+        try {
+          response = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
+            method: requestOptions.method || "GET",
+            headers: headers,
+            body: requestOptions.body === undefined ? undefined : JSON.stringify(requestOptions.body),
+          });
+        } catch (error) {
+          throw new Error("Supabase could not be reached: " + error.message);
+        }
+        var responseText = await response.text();
+        if (!response.ok) {
+          throw new Error("Supabase returned HTTP " + response.status + (responseText ? ": " + responseText : ""));
+        }
+        if (!responseText) return null;
+        try {
+          return JSON.parse(responseText);
+        } catch (error) {
+          throw new Error("Supabase returned an invalid response.");
+        }
+      }
+
+      function toSupabasePersonnel(record) {
+        return {
+          svc_no: record.svcNo,
+          rank: record.rank || "",
+          name: record.name || "",
+          unit: record.unit || "",
+          c_loc: record.cloc || "",
+          sex: record.sex || "",
+          dept: record.dept || "",
+          camo_size: record.camoSize || "",
+          boot_size: record.bootSize || "",
+          aviation_shirt_size: record.aviationShirtSize || "",
+          unit_insigma: record.unitInsignia || "",
+          pt_kit_size: record.ptKitSize || "",
+          user_id: record.userId || "",
+        };
+      }
+
+      async function upsertSupabasePersonnel(record) {
+        var filter = "svc_no=eq." + encodeURIComponent(record.svcNo);
+        var existing = await requestSupabase("personnel?" + filter + "&select=svc_no&limit=2");
+        if (!Array.isArray(existing)) throw new Error("Supabase returned an invalid personnel lookup.");
+        if (existing.length > 1) {
+          throw new Error("More than one Supabase record uses service number " + record.svcNo + ".");
+        }
+        if (existing.length === 1) {
+          await requestSupabase("personnel?" + filter, {
+            method: "PATCH",
+            headers: { Prefer: "return=minimal" },
+            body: toSupabasePersonnel(record),
+          });
+          return;
+        }
+        await requestSupabase("personnel", {
+          method: "POST",
+          headers: { Prefer: "return=minimal" },
+          body: toSupabasePersonnel(record),
+        });
+      }
+
+      async function syncPersonnelRecords(records, quiet) {
+        var validRecords = (records || []).filter(function (record) {
+          return record && record.svcNo;
+        });
+        var allSynced = true;
+        for (var i = 0; i < validRecords.length; i += 100) {
+          var batch = validRecords.slice(i, i + 100);
+          try {
+            await Promise.all(batch.map(upsertSupabasePersonnel));
+            batch.forEach(function (record) {
+              queueSupabaseChange({ type: "synced", svcNo: record.svcNo });
+            });
+          } catch (error) {
+            allSynced = false;
+            batch.forEach(function (record) {
+              queueSupabaseChange({ type: "upsert", svcNo: record.svcNo, record: record });
+            });
+            console.error("Could not sync personnel records with Supabase.", error);
+            if (!quiet) showToast("Saved locally, but Supabase sync failed: " + error.message, "warning", 8000);
+          }
+        }
+        setPendingSupabaseChanges(
+          getPendingSupabaseChanges().filter(function (item) {
+            return item.type !== "synced";
+          }),
+        );
+        return allSynced;
+      }
+
+      async function syncPersonnelRecord(record, quiet) {
+        return syncPersonnelRecords([record], quiet);
+      }
+
+      async function syncPersonnelDelete(svcNo, quiet) {
+        try {
+          await requestSupabase("personnel?svc_no=eq." + encodeURIComponent(svcNo), { method: "DELETE" });
+          setPendingSupabaseChanges(
+            getPendingSupabaseChanges().filter(function (item) {
+              return item.svcNo !== svcNo;
+            }),
+          );
+          return true;
+        } catch (error) {
+          queueSupabaseChange({ type: "delete", svcNo: svcNo });
+          console.error("Could not delete personnel from Supabase.", error);
+          if (!quiet) showToast("Deleted locally, but Supabase sync failed: " + error.message, "warning", 8000);
+          return false;
+        }
+      }
+
+      async function flushPendingSupabaseChanges() {
+        var pending = getPendingSupabaseChanges();
+        var remaining = [];
+        for (var i = 0; i < pending.length; i++) {
+          var change = pending[i];
+          if (!change || change.type === "synced") continue;
+          try {
+            if (change.type === "delete") {
+              await requestSupabase("personnel?svc_no=eq." + encodeURIComponent(change.svcNo), { method: "DELETE" });
+            } else if (change.type === "upsert" && change.record) {
+              await upsertSupabasePersonnel(change.record);
+            }
+          } catch (error) {
+            remaining.push(change);
+            console.error("A pending Supabase change could not be synced.", error);
+          }
+        }
+        setPendingSupabaseChanges(remaining);
+        if (remaining.length) {
+          showToast(remaining.length + " change(s) are still waiting to sync with Supabase.", "warning", 8000);
+        }
+      }
+
+      function fromSupabasePersonnel(row, localRecord) {
+        var record = Object.assign({}, localRecord || {}, {
+          svcNo: String(row.svc_no || ""),
+          rank: row.rank || "",
+          name: row.name || "",
+          unit: row.unit || "",
+          cloc: row.c_loc || "",
+          sex: row.sex || "",
+          dept: row.dept || "",
+          camoSize: row.camo_size || "",
+          bootSize: row.boot_size || "",
+          aviationShirtSize: row.aviation_shirt_size || "",
+          unitInsignia: row.unit_insigma || "",
+          ptKitSize: row.pt_kit_size || "",
+          userId: row.user_id || "",
+        });
+        ensureIssuedFields(record);
+        return record;
+      }
+
+      async function loadPersonnelFromSupabase() {
+        try {
+          await flushPendingSupabaseChanges();
+          var cloudRecords = [];
+          var offset = 0;
+          var pageSize = 1000;
+          while (true) {
+            var page = await requestSupabase(
+              "personnel?select=*&order=svc_no.asc&limit=" + pageSize + "&offset=" + offset,
+            );
+            if (!Array.isArray(page)) throw new Error("The personnel endpoint did not return a list.");
+            cloudRecords = cloudRecords.concat(page);
+            if (page.length < pageSize) break;
+            offset += pageSize;
+          }
+
+          var localRecords;
+          try {
+            var localPayload = JSON.parse(memoryStore.getItem(DB_KEY) || "{}");
+            localRecords = Array.isArray(localPayload.records) ? localPayload.records : [];
+          } catch (error) {
+            localRecords = [];
+          }
+          var pendingChanges = getPendingSupabaseChanges();
+          var pendingDeletes = Object.create(null);
+          pendingChanges.forEach(function (change) {
+            if (change && change.type === "delete") pendingDeletes[change.svcNo] = true;
+          });
+          cloudRecords = cloudRecords.filter(function (record) {
+            return !pendingDeletes[String(record.svc_no)];
+          });
+          var cloudSvcNos = Object.create(null);
+          cloudRecords.forEach(function (record) {
+            cloudSvcNos[String(record.svc_no)] = true;
+          });
+          pendingChanges.forEach(function (change) {
+            if (change && change.type === "upsert" && change.record && !cloudSvcNos[change.svcNo]) {
+              cloudRecords.push(toSupabasePersonnel(change.record));
+              cloudSvcNos[change.svcNo] = true;
+            }
+          });
+
+          if (memoryStore.getItem(SUPABASE_MIGRATED_KEY) !== "true") {
+            var legacyRecords = localRecords.filter(function (record) {
+              return record && record.svcNo && !cloudSvcNos[record.svcNo];
+            });
+            if (legacyRecords.length) {
+              var migrated = await syncPersonnelRecords(legacyRecords, true);
+              if (!migrated) throw new Error("Existing local records could not be migrated to Supabase.");
+              legacyRecords.forEach(function (record) {
+                cloudRecords.push(toSupabasePersonnel(record));
+              });
+              cloudRecords.forEach(function (record) {
+                cloudSvcNos[String(record.svc_no)] = true;
+              });
+            }
+            memoryStore.setItem(SUPABASE_MIGRATED_KEY, "true");
+          }
+
+          var localBySvcNo = Object.create(null);
+          localRecords.forEach(function (record) {
+            if (record && record.svcNo) localBySvcNo[record.svcNo] = record;
+          });
+          personnelData = cloudRecords.map(function (record) {
+            return fromSupabasePersonnel(record, localBySvcNo[String(record.svc_no)]);
+          });
+          recalculateCounters();
+          saveData();
+          updateClocDropdownOptions();
+          refresh();
+          showToast("Connected to Supabase — " + personnelData.length + " personnel record(s) synced.", "success", 5000);
+        } catch (error) {
+          console.error("Supabase personnel sync failed.", error);
+          showToast("Supabase sync failed; using saved local data. " + error.message, "warning", 9000);
+        }
+      }
 
       function recordActivity(action, detail, before, after) {
         try {
@@ -8514,7 +8787,7 @@
         document.getElementById("unitError").classList.remove("visible");
       };
 
-      document.getElementById("personnelForm").onsubmit = function (e) {
+      document.getElementById("personnelForm").onsubmit = async function (e) {
         e.preventDefault();
         clearValidationErrors();
         var rawSn = document.getElementById("svcNo").value.trim();
@@ -8591,12 +8864,23 @@
         });
         if (ei > -1 && ei < personnelData.length) {
           personnelData[ei] = pd;
-          showToast(pd.name + " updated successfully", "success");
+          saveData();
+          var updateSynced = await syncPersonnelRecord(pd, true);
+          showToast(
+            updateSynced ? pd.name + " updated and synced." : pd.name + " saved locally; Supabase sync is pending.",
+            updateSynced ? "success" : "warning",
+            7000,
+          );
         } else {
           personnelData.push(pd);
-          showToast(pd.name + " added successfully", "success");
+          saveData();
+          var addSynced = await syncPersonnelRecord(pd, true);
+          showToast(
+            addSynced ? pd.name + " added and synced." : pd.name + " saved locally; Supabase sync is pending.",
+            addSynced ? "success" : "warning",
+            7000,
+          );
         }
-        saveData();
         updateClocDropdownOptions();
         closeModal();
         refresh();
@@ -8699,7 +8983,7 @@
         showConfirm("Confirm Delete", "Are you sure you want to delete " + p.name + " (" + svcNo + ")?", {
           okText: "Delete",
           okClass: "btn-danger",
-        }).then(function (ok) {
+        }).then(async function (ok) {
           if (!ok) return;
           var idx = personnelData.findIndex(function (x) {
             return x.svcNo === svcNo;
@@ -8716,8 +9000,13 @@
               if (!hasMatch) clearSizeFilter();
             }
             saveData();
+            var synced = await syncPersonnelDelete(svcNo, true);
             refresh();
-            showToast(p.name + " has been deleted", "error");
+            showToast(
+              synced ? p.name + " has been deleted and synced." : p.name + " deleted locally; Supabase sync is pending.",
+              synced ? "success" : "warning",
+              7000,
+            );
           }
         });
       }
@@ -9014,8 +9303,23 @@
           serviceno: "svcNo",
           servicenumber: "svcNo",
           svc: "svcNo",
-          service: "svcNo",
           number: "svcNo",
+          svcnum: "svcNo",
+          servicenum: "svcNo",
+          serviceid: "svcNo",
+          serviceregno: "svcNo",
+          serviceregistrationnumber: "svcNo",
+          servicepersonnelno: "svcNo",
+          servicepersonnelnumber: "svcNo",
+          personnelno: "svcNo",
+          personnelnumber: "svcNo",
+          personalno: "svcNo",
+          personalnumber: "svcNo",
+          armyserviceno: "svcNo",
+          armyno: "svcNo",
+          forceno: "svcNo",
+          regno: "svcNo",
+          registrationno: "svcNo",
           servicen: "svcNo",
           rank: "rank",
           rnk: "rank",
@@ -9348,11 +9652,53 @@
               if (typeof XLSX === "undefined") throw new Error("Excel library not loaded.");
               var data = new Uint8Array(e.target.result);
               var workbook = XLSX.read(data, { type: "array" });
-              var firstSheetName = workbook.SheetNames[0];
-              var worksheet = workbook.Sheets[firstSheetName];
-              var jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-              if (!jsonRows.length) throw new Error("No data rows found");
-              processImportData(Object.keys(jsonRows[0]), jsonRows);
+              var detectedSheet = null;
+              (workbook.SheetNames || []).forEach(function (sheetName) {
+                var worksheet = workbook.Sheets[sheetName];
+                if (!worksheet || detectedSheet) return;
+                var grid = XLSX.utils.sheet_to_json(worksheet, {
+                  header: 1,
+                  defval: "",
+                  raw: false,
+                  blankrows: false,
+                });
+                var headerRow = findImportHeaderRow(grid);
+                if (headerRow) detectedSheet = { name: sheetName, grid: grid, headerIndex: headerRow.index };
+              });
+              if (!detectedSheet) {
+                throw new Error(
+                  "Could not identify a header row containing Svc No. Check that the workbook has a personnel table with a service number column.",
+                );
+              }
+              var fileHeaders = [];
+              var headerCounts = Object.create(null);
+              detectedSheet.grid[detectedSheet.headerIndex].forEach(function (header, index) {
+                var label = String(header === null || header === undefined ? "" : header).trim();
+                if (!label) return;
+                var uniqueLabel = label;
+                var suffix = 2;
+                while (headerCounts[uniqueLabel]) {
+                  uniqueLabel = label + " (" + suffix + ")";
+                  suffix += 1;
+                }
+                headerCounts[uniqueLabel] = true;
+                fileHeaders.push({ label: uniqueLabel, index: index });
+              });
+              var jsonRows = [];
+              for (var rowIndex = detectedSheet.headerIndex + 1; rowIndex < detectedSheet.grid.length; rowIndex++) {
+                var sourceRow = detectedSheet.grid[rowIndex];
+                if (!sourceRow || !sourceRow.some(function (value) { return String(value || "").trim() !== ""; })) continue;
+                var rowObject = {};
+                fileHeaders.forEach(function (header) {
+                  rowObject[header.label] = sourceRow[header.index] === undefined ? "" : sourceRow[header.index];
+                });
+                jsonRows.push(rowObject);
+              }
+              if (!jsonRows.length) throw new Error('No data rows found below the header row in sheet "' + detectedSheet.name + '".');
+              processImportData(
+                fileHeaders.map(function (header) { return header.label; }),
+                jsonRows,
+              );
             } catch (err) {
               document.getElementById("importError").textContent = err.message || "Failed to parse Excel file";
               document.getElementById("importError").classList.add("visible");
@@ -9414,6 +9760,66 @@
           };
           reader.readAsArrayBuffer(file);
         }
+      }
+
+      function normalizeImportHeader(header) {
+        return String(header === null || header === undefined ? "" : header)
+          .toLowerCase()
+          .replace(/[\u2010-\u2015\u2212]/g, "-")
+          .replace(/[^a-z0-9]/g, "");
+      }
+
+      function isServiceNumberHeader(header) {
+        var normalized = normalizeImportHeader(header);
+        return [
+          "svcno",
+          "svcnum",
+          "svcnumber",
+          "serviceno",
+          "servicenumber",
+          "servicenum",
+          "serviceid",
+          "serviceregno",
+          "serviceregistrationnumber",
+          "servicepersonnelno",
+          "servicepersonnelnumber",
+          "personnelno",
+          "personnelnumber",
+          "personalno",
+          "personalnumber",
+          "armyserviceno",
+          "armyno",
+          "forceno",
+          "regno",
+          "registrationno",
+          "number",
+        ].indexOf(normalized) !== -1;
+      }
+
+      function findImportHeaderRow(grid) {
+        if (!Array.isArray(grid)) return null;
+        var best = null;
+        var scanLimit = Math.min(grid.length, 50);
+        for (var rowIndex = 0; rowIndex < scanLimit; rowIndex++) {
+          var row = grid[rowIndex];
+          if (!Array.isArray(row)) continue;
+          var hasServiceNumber = row.some(isServiceNumberHeader);
+          if (!hasServiceNumber) continue;
+          var normalizedHeaders = row.map(normalizeImportHeader);
+          var recognizedCount = normalizedHeaders.filter(function (header) {
+            return [
+              "svcno", "svcnum", "svcnumber", "serviceno", "servicenumber", "servicenum", "serviceid",
+              "serviceregno", "servicepersonnelno", "servicepersonnelnumber", "personnelno",
+              "personnelnumber", "personalno", "personalnumber", "armyserviceno", "armyno", "forceno",
+              "rank", "rnk", "name", "fullname", "unit", "cloc", "location", "loc", "dept",
+              "department", "sex", "gender",
+            ].indexOf(header) !== -1;
+          }).length;
+          if (!best || recognizedCount > best.score) {
+            best = { index: rowIndex, score: recognizedCount };
+          }
+        }
+        return best;
       }
 
       function processPasteData() {
@@ -9627,11 +10033,11 @@
         }
       }
 
-      function executeImport() {
+      async function executeImport() {
         var newItemsCreated = 0;
         var autoAddedSizes = {};
         if (importParsedData.newItems && importParsedData.newItems.length > 0) {
-          importParsedData.newItems.forEach(function (item) {
+          importParsedData.newItems.forEach(function (mappedData) {
             if (!item || !item.key) return;
             if (!clothingConfig[item.key]) {
               clothingConfig[item.key] = {
@@ -9665,6 +10071,7 @@
         var newCount = 0,
           updateCount = 0,
           skippedEmptySvc = 0;
+        var importSyncRecords = Object.create(null);
         var mergedCount = (importParsedData.mergedItems && importParsedData.mergedItems.length) || 0;
         importParsedData.rows.forEach(function (mappedData) {
           if (!mappedData || !mappedData._svcNo) {
@@ -9742,13 +10149,18 @@
           if (isUpdate) {
             personnelData[existingIndex] = pd;
             updateCount++;
+            importSyncRecords[pd.svcNo] = pd;
           } else {
             personnelData.push(pd);
             newCount++;
-
-            savePersonnelToDatabase(pd);
+            importSyncRecords[pd.svcNo] = pd;
           }
         });
+        var recordsToSync = Object.keys(importSyncRecords).map(function (svcNo) {
+          return importSyncRecords[svcNo];
+        });
+        var importSynced = await syncPersonnelRecords(recordsToSync, true);
+        var importSyncFailures = importSynced ? 0 : recordsToSync.length;
         saveClothingConfig();
         recalculateCounters();
         saveData();
@@ -9762,6 +10174,9 @@
           msg += ". Merged " + mergedCount + " column" + (mergedCount > 1 ? "s" : "") + " to existing items";
         if (importParsedData.numberingRowSkipped) msg += ". Numbering row was auto-skipped";
         showToast(msg, "success", 5000);
+        if (importSyncFailures) {
+          showToast(importSyncFailures + " imported record(s) are saved locally and waiting to sync with Supabase.", "warning", 8000);
+        }
         Object.keys(autoAddedSizes).forEach(function (k) {
           var cfg = clothingConfig[k];
           if (cfg && autoAddedSizes[k].size > 0) {
@@ -10405,7 +10820,16 @@
       });
 
       /* ===== INITIALIZATION ===== */
-      document.addEventListener("DOMContentLoaded", function () {
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          var authUser = await window.ditCloudSync.requireSession();
+          if (!authUser) { window.location.replace("index.html"); return; }
+          await window.ditCloudSync.hydrate();
+        } catch (error) {
+          console.error("Could not load shared clothing records.", error);
+          showToast("Could not load shared records: " + error.message, "error", 8000);
+          return;
+        }
         initTheme();
         var loginUser = null;
         try {
@@ -10474,79 +10898,13 @@
 
         document.querySelectorAll(".filter-select").forEach(updateFilterSelectStyle);
         refresh();
+        loadPersonnelFromSupabase();
       });
 
     </script>
 
     <script src="message-admin.js"></script>
     <script src="module-background.js"></script>
-
-        <!-- Load the Supabase SDK Library -->
- <script src="https://jsdelivr.net"></script>
- 
-
-<script>
-  // Initialize the Supabase Client connection
-  const SUPABASE_URL = "https://xpoiysklivftpzmflbdv.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_5O4yT6UZV_aCoHC0U01EZw_15e_hb28";
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  // Quick verification test log
-  console.log("Supabase connection linked successfully:", supabase);
-
-  // 1. PUSH local additions to Supabase
-async function savePersonnelToDatabase(p) {
-  const { data, error } = await supabase
-    .from('personnel')
-    .insert([
-      { 
-        name: p.name || 'Unknown', 
-        role: p.role || 'Unassigned', 
-        status: p.status || 'Active'
-      }
-    ]);
-
-  if (error) {
-    console.error("Database save failed:", error.message);
-  } else {
-    console.log("Permanently saved to Supabase:", data);
-  }
-}
-
-// 2. FETCH data from Supabase when the application loads
-async function loadPersonnelFromDatabase() {
-  const { data, error } = await supabase
-    .from('personnel')
-    .select('*');
-
-  if (error) {
-    console.error("Error loading database profiles:", error.message);
-    return;
-  }
-
-  if (data && data.length > 0) {
-    // Map database properties back into your personnelData cache format
-    personnelData = data.map(function(dbRow, index) {
-      return {
-        svcNo: dbRow.id.toString(), // Uses database ID if your system lacks service numbers
-        name: dbRow.name,
-        role: dbRow.role,
-        status: dbRow.status,
-        clothing: {} // Keep empty or fill out later
-      };
-    });
-    
-    // Trigger your application's layout refreshing mechanics
-    if (typeof refresh === "function") refresh();
-  }
-}
-
-// Automatically load database files whenever the app starts up
-window.addEventListener('DOMContentLoaded', loadPersonnelFromDatabase);
-
-</script>
-
-
 
   </body>
 </html>
