@@ -346,12 +346,25 @@
     };
   }
 
+  async function functionErrorMessage(error, fallback) {
+    let message = error && error.message || fallback;
+    if (error && error.context && typeof error.context.json === 'function') {
+      try {
+        const details = await error.context.json();
+        if (details && typeof details.error === 'string') message = details.error;
+      } catch (readError) {
+        console.error('Could not read the Edge Function error response.', readError);
+      }
+    }
+    return message;
+  }
+
   async function signIn(identifier, password) {
     const client = await getClient();
     const { data, error } = await client.functions.invoke('manage-users', {
       body: { action: 'sign_in', identifier: identifier.trim(), password: password },
     });
-    if (error) throw new Error(error.message || 'Could not sign in.');
+    if (error) throw new Error(await functionErrorMessage(error, 'Could not sign in.'));
     if (!data || !data.session || !data.user) throw new Error(data && data.error || 'Invalid username/email or password.');
     const { error: sessionError } = await client.auth.setSession({
       access_token: data.session.access_token,
@@ -380,18 +393,7 @@
     if (user) payload.user = user;
     if (userId) payload.userId = userId;
     const { data, error } = await client.functions.invoke('manage-users', { body: payload });
-    if (error) {
-      let message = error.message || 'User management request failed.';
-      if (error.context && typeof error.context.json === 'function') {
-        try {
-          const details = await error.context.json();
-          if (details && details.error) message = details.error;
-        } catch (readError) {
-          console.error('Could not read the user-management error response.', readError);
-        }
-      }
-      throw new Error(message);
-    }
+    if (error) throw new Error(await functionErrorMessage(error, 'User management request failed.'));
     if (data && data.error) throw new Error(data.error);
     return data;
   }
